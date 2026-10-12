@@ -12,7 +12,8 @@ import { update } from '@/routes/password';
 defineOptions({
     layout: {
         title: 'Defina uma nova senha',
-        description: 'Escolha uma senha nova e exclusiva para proteger sua conta.',
+        description:
+            'Escolha uma senha nova e exclusiva para proteger sua conta.',
     },
 });
 
@@ -64,7 +65,9 @@ const inputEmail = ref(props.email);
             </div>
 
             <div class="grid gap-2">
-                <Label for="password_confirmation"> Confirme a nova senha </Label>
+                <Label for="password_confirmation">
+                    Confirme a nova senha
+                </Label>
                 <PasswordInput
                     id="password_confirmation"
                     name="password_confirmation"

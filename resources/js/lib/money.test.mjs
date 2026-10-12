@@ -2,14 +2,14 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { formatMoneyInput, parseMoneyInput } from './money.ts';
 
-test('formats whole reais with two decimal places', () => {
+void test('formats whole reais with two decimal places', async () => {
     assert.deepEqual(formatMoneyInput('50'), {
         display: '50,00',
         decimal: '50.00',
     });
 });
 
-test('accepts centavos and formatted Brazilian values', () => {
+void test('accepts centavos and formatted Brazilian values', async () => {
     assert.deepEqual(formatMoneyInput('50,5'), {
         display: '50,50',
         decimal: '50.50',
@@ -20,7 +20,7 @@ test('accepts centavos and formatted Brazilian values', () => {
     });
 });
 
-test('keeps invalid amounts out of the formatted value', () => {
+void test('keeps invalid amounts out of the formatted value', async () => {
     assert.equal(parseMoneyInput('50,999'), null);
     assert.equal(formatMoneyInput('abc'), null);
 });

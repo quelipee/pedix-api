@@ -12,7 +12,8 @@ import { email } from '@/routes/password';
 defineOptions({
     layout: {
         title: 'Recuperar acesso',
-        description: 'Informe seu e-mail e enviaremos um link para redefinir sua senha.',
+        description:
+            'Informe seu e-mail e enviaremos um link para redefinir sua senha.',
     },
 });
 
@@ -29,7 +30,8 @@ defineProps<{
         role="status"
         class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-center text-sm font-medium text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200"
     >
-        Se o e-mail estiver cadastrado, enviaremos as instruções para redefinir sua senha.
+        Se o e-mail estiver cadastrado, enviaremos as instruções para redefinir
+        sua senha.
     </div>
 
     <div class="space-y-6">

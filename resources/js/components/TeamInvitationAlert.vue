@@ -18,7 +18,9 @@ defineProps<Props>();
         >
             <Info class="size-4" />
             <AlertDescription class="text-blue-900 dark:text-blue-100">
-                {{ action }} para participar da equipe “{{ invitation.teamName }}”.
+                {{ action }} para participar da equipe “{{
+                    invitation.teamName
+                }}”.
             </AlertDescription>
         </Alert>
     </div>

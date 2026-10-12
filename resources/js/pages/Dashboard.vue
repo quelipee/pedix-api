@@ -31,9 +31,11 @@ const props = defineProps<{
 const page = usePage();
 const selectedOrder = ref<OrderDetails | null>(null);
 const firstName = computed(() => page.props.auth.user.name.split(' ')[0]);
-const ordersUrl = computed(() => page.props.currentTeam
-    ? manageOrders(page.props.currentTeam.slug).url
-    : '/');
+const ordersUrl = computed(() =>
+    page.props.currentTeam
+        ? manageOrders(page.props.currentTeam.slug).url
+        : '/',
+);
 const summaryCards = computed(() => [
     {
         label: 'Pedidos hoje',
@@ -196,7 +198,10 @@ defineOptions({
                             Os últimos pedidos registrados.
                         </p>
                     </div>
-                    <Link :href="ordersUrl" class="text-sm font-medium text-primary hover:underline">
+                    <Link
+                        :href="ordersUrl"
+                        class="text-sm font-medium text-primary hover:underline"
+                    >
                         Ver todos
                     </Link>
                 </header>

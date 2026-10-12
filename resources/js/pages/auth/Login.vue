@@ -54,22 +54,42 @@ defineProps<{
             data-test="google-login-button"
         >
             <svg aria-hidden="true" viewBox="0 0 48 48" class="h-5 w-5">
-                <path fill="#4285F4" d="M43.6 24.5c0-1.4-.1-2.8-.4-4.1H24v7.8h11a9.4 9.4 0 0 1-4.1 6.2v5.1h6.6c3.9-3.6 6.1-8.8 6.1-15Z" />
-                <path fill="#34A853" d="M24 44c5.5 0 10.1-1.8 13.5-4.9l-6.6-5.1c-1.8 1.2-4 1.9-6.9 1.9-5.3 0-9.8-3.6-11.4-8.4H5.8v5.3A20 20 0 0 0 24 44Z" />
-                <path fill="#FBBC05" d="M12.6 27.5a12 12 0 0 1 0-7v-5.3H5.8a20 20 0 0 0 0 17.6l6.8-5.3Z" />
-                <path fill="#EA4335" d="M24 12c3 0 5.7 1 7.8 3l5.8-5.8A19.4 19.4 0 0 0 24 4 20 20 0 0 0 5.8 15.2l6.8 5.3C14.2 15.6 18.7 12 24 12Z" />
+                <path
+                    fill="#4285F4"
+                    d="M43.6 24.5c0-1.4-.1-2.8-.4-4.1H24v7.8h11a9.4 9.4 0 0 1-4.1 6.2v5.1h6.6c3.9-3.6 6.1-8.8 6.1-15Z"
+                />
+                <path
+                    fill="#34A853"
+                    d="M24 44c5.5 0 10.1-1.8 13.5-4.9l-6.6-5.1c-1.8 1.2-4 1.9-6.9 1.9-5.3 0-9.8-3.6-11.4-8.4H5.8v5.3A20 20 0 0 0 24 44Z"
+                />
+                <path
+                    fill="#FBBC05"
+                    d="M12.6 27.5a12 12 0 0 1 0-7v-5.3H5.8a20 20 0 0 0 0 17.6l6.8-5.3Z"
+                />
+                <path
+                    fill="#EA4335"
+                    d="M24 12c3 0 5.7 1 7.8 3l5.8-5.8A19.4 19.4 0 0 0 24 4 20 20 0 0 0 5.8 15.2l6.8 5.3C14.2 15.6 18.7 12 24 12Z"
+                />
             </svg>
             Entrar com Google
         </a>
-        <p v-if="googleAuthError" role="alert" class="text-center text-sm text-destructive">
+        <p
+            v-if="googleAuthError"
+            role="alert"
+            class="text-center text-sm text-destructive"
+        >
             {{ googleAuthError }}
         </p>
     </div>
 
     <div class="relative my-6">
-        <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-border" /></div>
+        <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-border" />
+        </div>
         <div class="relative flex justify-center text-xs uppercase">
-            <span class="bg-background px-2 text-muted-foreground">ou entre com e-mail e senha</span>
+            <span class="bg-background px-2 text-muted-foreground"
+                >ou entre com e-mail e senha</span
+            >
         </div>
     </div>
 
@@ -95,7 +115,9 @@ defineProps<{
                     autocapitalize="none"
                     spellcheck="false"
                     :aria-invalid="Boolean(errors.email)"
-                    :aria-describedby="errors.email ? 'login-email-error' : undefined"
+                    :aria-describedby="
+                        errors.email ? 'login-email-error' : undefined
+                    "
                 />
                 <InputError id="login-email-error" :message="errors.email" />
             </div>
@@ -120,13 +142,21 @@ defineProps<{
                     autocomplete="current-password"
                     placeholder="Digite sua senha"
                     :aria-invalid="Boolean(errors.password)"
-                    :aria-describedby="errors.password ? 'login-password-error' : undefined"
+                    :aria-describedby="
+                        errors.password ? 'login-password-error' : undefined
+                    "
                 />
-                <InputError id="login-password-error" :message="errors.password" />
+                <InputError
+                    id="login-password-error"
+                    :message="errors.password"
+                />
             </div>
 
             <div class="flex items-center justify-between">
-                <Label for="remember" class="flex items-center gap-2 text-sm font-normal text-muted-foreground">
+                <Label
+                    for="remember"
+                    class="flex items-center gap-2 text-sm font-normal text-muted-foreground"
+                >
                     <Checkbox id="remember" name="remember" :tabindex="3" />
                     <span>Manter conectado neste dispositivo</span>
                 </Label>
@@ -144,7 +174,9 @@ defineProps<{
             </Button>
         </div>
 
-        <div class="border-t border-border pt-5 text-center text-sm text-muted-foreground">
+        <div
+            class="border-t border-border pt-5 text-center text-sm text-muted-foreground"
+        >
             Ainda não tem acesso?
             <TextLink
                 :href="

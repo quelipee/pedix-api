@@ -53,7 +53,9 @@ defineOptions({
                     name="name"
                     placeholder="Como podemos te chamar?"
                     :aria-invalid="Boolean(errors.name)"
-                    :aria-describedby="errors.name ? 'register-name-error' : undefined"
+                    :aria-describedby="
+                        errors.name ? 'register-name-error' : undefined
+                    "
                 />
                 <InputError id="register-name-error" :message="errors.name" />
             </div>
@@ -71,7 +73,9 @@ defineOptions({
                     autocapitalize="none"
                     spellcheck="false"
                     :aria-invalid="Boolean(errors.email)"
-                    :aria-describedby="errors.email ? 'register-email-error' : undefined"
+                    :aria-describedby="
+                        errors.email ? 'register-email-error' : undefined
+                    "
                 />
                 <InputError id="register-email-error" :message="errors.email" />
             </div>
@@ -87,10 +91,23 @@ defineOptions({
                     placeholder="Use uma senha forte"
                     :passwordrules="passwordRules"
                     :aria-invalid="Boolean(errors.password)"
-                    :aria-describedby="errors.password ? 'register-password-error' : 'register-password-hint'"
+                    :aria-describedby="
+                        errors.password
+                            ? 'register-password-error'
+                            : 'register-password-hint'
+                    "
                 />
-                <InputError id="register-password-error" :message="errors.password" />
-                <p id="register-password-hint" class="text-xs leading-5 text-muted-foreground">Escolha uma senha longa e exclusiva. Em produção, o sistema exige uma senha forte.</p>
+                <InputError
+                    id="register-password-error"
+                    :message="errors.password"
+                />
+                <p
+                    id="register-password-hint"
+                    class="text-xs leading-5 text-muted-foreground"
+                >
+                    Escolha uma senha longa e exclusiva. Em produção, o sistema
+                    exige uma senha forte.
+                </p>
             </div>
 
             <div class="grid gap-2">
@@ -104,9 +121,16 @@ defineOptions({
                     placeholder="Digite a senha novamente"
                     :passwordrules="passwordRules"
                     :aria-invalid="Boolean(errors.password_confirmation)"
-                    :aria-describedby="errors.password_confirmation ? 'register-confirmation-error' : undefined"
+                    :aria-describedby="
+                        errors.password_confirmation
+                            ? 'register-confirmation-error'
+                            : undefined
+                    "
                 />
-                <InputError id="register-confirmation-error" :message="errors.password_confirmation" />
+                <InputError
+                    id="register-confirmation-error"
+                    :message="errors.password_confirmation"
+                />
             </div>
 
             <Button
@@ -121,7 +145,9 @@ defineOptions({
             </Button>
         </div>
 
-        <div class="border-t border-border pt-5 text-center text-sm text-muted-foreground">
+        <div
+            class="border-t border-border pt-5 text-center text-sm text-muted-foreground"
+        >
             Já tem uma conta?
             <TextLink
                 :href="

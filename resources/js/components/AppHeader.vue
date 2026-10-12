@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { ChevronDown, ClipboardList, LayoutGrid, ShoppingBag } from '@lucide/vue';
+import {
+    ChevronDown,
+    ClipboardList,
+    LayoutGrid,
+    ShoppingBag,
+} from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
@@ -37,10 +42,14 @@ const dashboardUrl = computed(() =>
     page.props.currentTeam ? dashboard(page.props.currentTeam.slug).url : '/',
 );
 const ordersUrl = computed(() =>
-    page.props.currentTeam ? manageOrders(page.props.currentTeam.slug).url : '/',
+    page.props.currentTeam
+        ? manageOrders(page.props.currentTeam.slug).url
+        : '/',
 );
 const productsUrl = computed(() =>
-    page.props.currentTeam ? productCatalog(page.props.currentTeam.slug).url : '/',
+    page.props.currentTeam
+        ? productCatalog(page.props.currentTeam.slug).url
+        : '/',
 );
 const hasMultipleTeams = computed(() => (page.props.teams ?? []).length > 1);
 const firstName = computed(() => user.value.name.split(' ')[0]);

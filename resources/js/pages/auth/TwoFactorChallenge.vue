@@ -26,10 +26,10 @@ const authConfigContent = computed<TwoFactorConfigContent>(() => {
     }
 
     return {
-            title: 'Autenticação em duas etapas',
+        title: 'Autenticação em duas etapas',
         description:
-                'Digite o código de seis dígitos gerado pelo seu aplicativo autenticador.',
-            buttonText: 'usar código de recuperação',
+            'Digite o código de seis dígitos gerado pelo seu aplicativo autenticador.',
+        buttonText: 'usar código de recuperação',
     };
 });
 

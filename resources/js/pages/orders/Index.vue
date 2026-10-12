@@ -4,7 +4,11 @@ import { ArrowRight, ClipboardList, PackageOpen, Search } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import OrderDetailsDialog from '@/components/OrderDetailsDialog.vue';
 import { Button } from '@/components/ui/button';
-import { advance as advanceOrder, create as createOrder, manage as manageOrders } from '@/routes/orders';
+import {
+    advance as advanceOrder,
+    create as createOrder,
+    manage as manageOrders,
+} from '@/routes/orders';
 import type { Team } from '@/types';
 import type { OrderDetails, OrderStatus } from '@/types/orders';
 
@@ -28,10 +32,19 @@ const searchTerm = ref(props.filters.q);
 const advancingOrderId = ref<number | null>(null);
 const advanceError = ref('');
 const advanceForm = useHttp<{ status: OrderStatus }>({ status: 'em_preparo' });
-const currentTeam = computed(() => props.currentTeam ?? (page.props.currentTeam as Team | null));
-const manageUrl = computed(() => currentTeam.value ? manageOrders(currentTeam.value.slug).url : '/');
-const createUrl = computed(() => currentTeam.value ? createOrder(currentTeam.value.slug).url : '/');
-const currency = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+const currentTeam = computed(
+    () => props.currentTeam ?? (page.props.currentTeam as Team | null),
+);
+const manageUrl = computed(() =>
+    currentTeam.value ? manageOrders(currentTeam.value.slug).url : '/',
+);
+const createUrl = computed(() =>
+    currentTeam.value ? createOrder(currentTeam.value.slug).url : '/',
+);
+const currency = new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+});
 
 const statusTabs: { value: StatusFilter; label: string }[] = [
     { value: 'todos', label: 'Todos' },
@@ -43,7 +56,8 @@ const statusTabs: { value: StatusFilter; label: string }[] = [
 
 const statusClasses: Record<OrderStatus, string> = {
     novo: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
-    em_preparo: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300',
+    em_preparo:
+        'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300',
     pronto: 'bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300',
     finalizado: 'bg-muted text-muted-foreground',
 };
@@ -55,21 +69,32 @@ const nextStatusLabels: Record<OrderStatus, string> = {
     finalizado: '',
 };
 
-watch(() => props.filters.q, (query) => {
-    searchTerm.value = query;
-});
+watch(
+    () => props.filters.q,
+    (query) => {
+        searchTerm.value = query;
+    },
+);
 
-function visitOrders(status: StatusFilter, query: string, pageNumber = 1): void {
+function visitOrders(
+    status: StatusFilter,
+    query: string,
+    pageNumber = 1,
+): void {
     selectedOrder.value = null;
     advanceError.value = '';
-    router.get(manageUrl.value, {
-        status,
-        q: query.trim(),
-        ...(pageNumber > 1 ? { page: pageNumber } : {}),
-    }, {
-        preserveState: true,
-        replace: true,
-    });
+    router.get(
+        manageUrl.value,
+        {
+            status,
+            q: query.trim(),
+            ...(pageNumber > 1 ? { page: pageNumber } : {}),
+        },
+        {
+            preserveState: true,
+            replace: true,
+        },
+    );
 }
 
 function formatOrderDate(value: string | null): string {
@@ -94,7 +119,9 @@ function advance(order: OrderDetails): void {
     advanceForm.patch(advanceOrder(order.id).url, {
         onSuccess: () => router.reload({ only: ['orders', 'statusCounts'] }),
         onError: (errors) => {
-            advanceError.value = String(errors.status ?? 'Não foi possível atualizar o pedido.');
+            advanceError.value = String(
+                errors.status ?? 'Não foi possível atualizar o pedido.',
+            );
         },
         onFinish: () => {
             advancingOrderId.value = null;
@@ -112,36 +139,58 @@ defineOptions({
 
     <OrderDetailsDialog :order="selectedOrder" @close="selectedOrder = null" />
 
-    <div class="mx-auto flex w-full max-w-[1600px] flex-col gap-6 p-4 sm:p-6 xl:p-8">
+    <div
+        class="mx-auto flex w-full max-w-[1600px] flex-col gap-6 p-4 sm:p-6 xl:p-8"
+    >
         <header class="space-y-1">
-            <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">Pedidos</h1>
+            <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
+                Pedidos
+            </h1>
             <p class="text-sm text-muted-foreground">
-                Acompanhe os pedidos e avance cada um pela cozinha até a finalização.
+                Acompanhe os pedidos e avance cada um pela cozinha até a
+                finalização.
             </p>
         </header>
 
-        <section class="rounded-2xl border bg-card text-card-foreground shadow-sm">
+        <section
+            class="rounded-2xl border bg-card text-card-foreground shadow-sm"
+        >
             <div class="space-y-4 border-b p-4 sm:p-5">
-                <nav aria-label="Filtrar pedidos por etapa" class="flex gap-2 overflow-x-auto pb-1">
+                <nav
+                    aria-label="Filtrar pedidos por etapa"
+                    class="flex gap-2 overflow-x-auto pb-1"
+                >
                     <button
                         v-for="tab in statusTabs"
                         :key="tab.value"
                         type="button"
                         class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-xl border px-3 text-sm font-medium transition-colors"
-                        :class="filters.status === tab.value ? 'border-primary/30 bg-primary/10 text-primary' : 'border-transparent text-muted-foreground hover:bg-muted hover:text-foreground'"
+                        :class="
+                            filters.status === tab.value
+                                ? 'border-primary/30 bg-primary/10 text-primary'
+                                : 'border-transparent text-muted-foreground hover:bg-muted hover:text-foreground'
+                        "
                         :aria-pressed="filters.status === tab.value"
                         @click="visitOrders(tab.value, searchTerm)"
                     >
                         {{ tab.label }}
-                        <span class="rounded-full bg-background/70 px-2 py-0.5 text-xs tabular-nums">
+                        <span
+                            class="rounded-full bg-background/70 px-2 py-0.5 text-xs tabular-nums"
+                        >
                             {{ statusCounts[tab.value] }}
                         </span>
                     </button>
                 </nav>
 
-                <form class="flex flex-wrap gap-2" role="search" @submit.prevent="visitOrders(filters.status, searchTerm)">
+                <form
+                    class="flex flex-wrap gap-2"
+                    role="search"
+                    @submit.prevent="visitOrders(filters.status, searchTerm)"
+                >
                     <div class="relative min-w-52 flex-1 sm:max-w-md">
-                        <Search class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <Search
+                            class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                        />
                         <input
                             v-model="searchTerm"
                             type="search"
@@ -150,24 +199,36 @@ defineOptions({
                             class="h-10 w-full rounded-xl border border-input bg-background pr-3 pl-9 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                         />
                     </div>
-                    <Button type="submit" variant="outline" class="rounded-xl">Buscar</Button>
+                    <Button type="submit" variant="outline" class="rounded-xl"
+                        >Buscar</Button
+                    >
                     <Button
                         v-if="filters.q"
                         type="button"
                         variant="ghost"
                         class="rounded-xl"
-                        @click="searchTerm = ''; visitOrders(filters.status, '')"
+                        @click="
+                            searchTerm = '';
+                            visitOrders(filters.status, '');
+                        "
                     >
                         Limpar
                     </Button>
                 </form>
             </div>
 
-            <p v-if="advanceError" role="alert" class="mx-4 mt-4 rounded-xl bg-destructive/10 p-3 text-sm text-destructive sm:mx-5">
+            <p
+                v-if="advanceError"
+                role="alert"
+                class="mx-4 mt-4 rounded-xl bg-destructive/10 p-3 text-sm text-destructive sm:mx-5"
+            >
                 {{ advanceError }}
             </p>
 
-            <div v-if="orders.data.length" class="grid gap-3 p-4 lg:grid-cols-2 sm:p-5">
+            <div
+                v-if="orders.data.length"
+                class="grid gap-3 p-4 sm:p-5 lg:grid-cols-2"
+            >
                 <article
                     v-for="order in orders.data"
                     :key="order.id"
@@ -184,25 +245,45 @@ defineOptions({
                                 <ClipboardList class="size-4 text-primary" />
                                 Pedido #{{ order.id }}
                             </span>
-                            <span class="mt-1 block text-sm text-muted-foreground">
-                                {{ order.customerName || 'Cliente não informado' }} · {{ order.modalityLabel }}
+                            <span
+                                class="mt-1 block text-sm text-muted-foreground"
+                            >
+                                {{
+                                    order.customerName ||
+                                    'Cliente não informado'
+                                }}
+                                · {{ order.modalityLabel }}
                             </span>
                         </button>
-                        <span class="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium" :class="statusClasses[order.status]">
+                        <span
+                            class="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium"
+                            :class="statusClasses[order.status]"
+                        >
                             {{ order.statusLabel }}
                         </span>
                     </div>
 
-                    <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
+                    <div
+                        class="flex flex-wrap items-center justify-between gap-2 text-sm"
+                    >
                         <span class="text-muted-foreground">
                             {{ formatOrderDate(order.createdAt) }} ·
-                            {{ order.items.length }} {{ order.items.length === 1 ? 'item' : 'itens' }}
+                            {{ order.items.length }}
+                            {{ order.items.length === 1 ? 'item' : 'itens' }}
                         </span>
-                        <span class="font-semibold tabular-nums">{{ currency.format(Number(order.total)) }}</span>
+                        <span class="font-semibold tabular-nums">{{
+                            currency.format(Number(order.total))
+                        }}</span>
                     </div>
 
-                    <div class="flex items-center justify-between gap-2 border-t pt-3">
-                        <button type="button" class="text-sm font-medium text-primary hover:underline" @click="selectedOrder = order">
+                    <div
+                        class="flex items-center justify-between gap-2 border-t pt-3"
+                    >
+                        <button
+                            type="button"
+                            class="text-sm font-medium text-primary hover:underline"
+                            @click="selectedOrder = order"
+                        >
                             Ver detalhes
                         </button>
                         <Button
@@ -213,36 +294,86 @@ defineOptions({
                             :disabled="advanceForm.processing"
                             @click="advance(order)"
                         >
-                            {{ advancingOrderId === order.id ? 'Atualizando...' : nextStatusLabels[order.status] }}
-                            <ArrowRight v-if="advancingOrderId !== order.id" class="size-4" />
+                            {{
+                                advancingOrderId === order.id
+                                    ? 'Atualizando...'
+                                    : nextStatusLabels[order.status]
+                            }}
+                            <ArrowRight
+                                v-if="advancingOrderId !== order.id"
+                                class="size-4"
+                            />
                         </Button>
-                        <span v-else class="text-xs text-muted-foreground">Concluído</span>
+                        <span v-else class="text-xs text-muted-foreground"
+                            >Concluído</span
+                        >
                     </div>
                 </article>
             </div>
 
-            <div v-else class="flex min-h-72 flex-col items-center justify-center p-8 text-center">
-                <span class="grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary">
+            <div
+                v-else
+                class="flex min-h-72 flex-col items-center justify-center p-8 text-center"
+            >
+                <span
+                    class="grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary"
+                >
                     <PackageOpen class="size-6" />
                 </span>
                 <h2 class="mt-4 font-semibold">Nenhum pedido encontrado</h2>
                 <p class="mt-1 max-w-sm text-sm text-muted-foreground">
-                    {{ filters.q ? 'Tente outro número, nome ou telefone.' : 'Os pedidos desta etapa aparecerão aqui.' }}
+                    {{
+                        filters.q
+                            ? 'Tente outro número, nome ou telefone.'
+                            : 'Os pedidos desta etapa aparecerão aqui.'
+                    }}
                 </p>
-                <Link v-if="statusCounts.todos === 0" :href="createUrl" class="mt-4 text-sm font-medium text-primary hover:underline">
+                <Link
+                    v-if="statusCounts.todos === 0"
+                    :href="createUrl"
+                    class="mt-4 text-sm font-medium text-primary hover:underline"
+                >
                     Criar primeiro pedido
                 </Link>
             </div>
 
-            <footer v-if="orders.lastPage > 1" class="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3 text-sm sm:px-5">
+            <footer
+                v-if="orders.lastPage > 1"
+                class="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3 text-sm sm:px-5"
+            >
                 <span class="text-muted-foreground">
-                    Página {{ orders.currentPage }} de {{ orders.lastPage }} · {{ orders.total }} pedidos
+                    Página {{ orders.currentPage }} de {{ orders.lastPage }} ·
+                    {{ orders.total }} pedidos
                 </span>
                 <div class="flex gap-2">
-                    <Button type="button" variant="outline" size="sm" :disabled="orders.currentPage <= 1" @click="visitOrders(filters.status, filters.q, orders.currentPage - 1)">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        :disabled="orders.currentPage <= 1"
+                        @click="
+                            visitOrders(
+                                filters.status,
+                                filters.q,
+                                orders.currentPage - 1,
+                            )
+                        "
+                    >
                         Anterior
                     </Button>
-                    <Button type="button" variant="outline" size="sm" :disabled="orders.currentPage >= orders.lastPage" @click="visitOrders(filters.status, filters.q, orders.currentPage + 1)">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        :disabled="orders.currentPage >= orders.lastPage"
+                        @click="
+                            visitOrders(
+                                filters.status,
+                                filters.q,
+                                orders.currentPage + 1,
+                            )
+                        "
+                    >
                         Próxima
                     </Button>
                 </div>
