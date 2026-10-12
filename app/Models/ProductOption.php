@@ -7,6 +7,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $id
+ * @property string $name
+ * @property string $price
+ * @property bool $active
+ * @property int $sort_order
+ */
 class ProductOption extends Model
 {
     /** @use HasFactory<ProductOptionFactory> */

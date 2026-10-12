@@ -7,6 +7,15 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $id
+ * @property int|null $product_id
+ * @property string $product_name
+ * @property string $unit_price
+ * @property int $quantity
+ * @property string|null $notes
+ * @property array<int, array{id: int, group: string, name: string, price: string}>|null $selected_options
+ */
 class OrderItem extends Model
 {
     /** @use HasFactory<OrderItemFactory> */

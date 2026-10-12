@@ -6,10 +6,25 @@ use App\Enums\OrderModality;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use Database\Factories\OrderFactory;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property OrderModality $modality
+ * @property string|null $customer_name
+ * @property string|null $customer_phone
+ * @property array{postal_code: string, street: string, number: string, complement?: string|null, neighborhood: string, city: string, state: string}|null $delivery_address
+ * @property string|null $delivery_fee
+ * @property OrderStatus $status
+ * @property PaymentMethod|null $payment_method
+ * @property string|null $change_for
+ * @property Carbon|null $created_at
+ * @property-read Collection<int, OrderItem> $items
+ */
 class Order extends Model
 {
     /** @use HasFactory<OrderFactory> */

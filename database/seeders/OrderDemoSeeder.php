@@ -24,8 +24,8 @@ class OrderDemoSeeder extends Seeder
         $products = Product::query()
             ->where('active', true)
             ->orderBy('id')
+            ->limit(2)
             ->get()
-            ->take(2)
             ->values();
 
         if ($products->isEmpty()) {
