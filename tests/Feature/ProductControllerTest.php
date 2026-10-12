@@ -245,4 +245,33 @@ class ProductControllerTest extends TestCase
         $this->assertDatabaseHas('product_option_groups', ['name' => 'Adicionais', 'max_selections' => 2]);
         $this->assertDatabaseHas('product_options', ['name' => 'Bacon extra', 'price' => '4.00']);
     }
+
+    public function test_updating_availability_without_option_payload_preserves_existing_options(): void
+    {
+        $user = User::factory()->create();
+        $product = Product::factory()->create(['name' => 'X-Bacon']);
+        $group = $product->optionGroups()->create([
+            'name' => 'Adicionais',
+            'min_selections' => 0,
+            'max_selections' => 2,
+        ]);
+        $option = $group->options()->create([
+            'name' => 'Bacon extra',
+            'price' => '4.00',
+            'active' => true,
+        ]);
+
+        $this->actingAs($user)->patchJson(route('products.update', $product), [
+            'name' => $product->name,
+            'category' => $product->category,
+            'description' => $product->description,
+            'ingredients' => $product->ingredients,
+            'price' => $product->price,
+            'active' => false,
+        ])->assertOk();
+
+        $this->assertModelExists($group);
+        $this->assertModelExists($option);
+        $this->assertDatabaseHas('products', ['id' => $product->id, 'active' => false]);
+    }
 }
