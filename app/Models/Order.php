@@ -1,0 +1,58 @@
+<?php
+
+namespace App\Models;
+
+use App\Enums\OrderModality;
+use App\Enums\OrderStatus;
+use App\Enums\PaymentMethod;
+use Database\Factories\OrderFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class Order extends Model
+{
+    /** @use HasFactory<OrderFactory> */
+    use HasFactory;
+
+    protected $fillable = ['modality', 'customer_name', 'customer_phone', 'delivery_address', 'delivery_fee', 'status', 'payment_method', 'change_for'];
+
+    protected function casts(): array
+    {
+        return [
+            'modality' => OrderModality::class,
+            'status' => OrderStatus::class,
+            'payment_method' => PaymentMethod::class,
+            'change_for' => 'decimal:2',
+            'delivery_fee' => 'decimal:2',
+            'delivery_address' => 'array',
+        ];
+    }
+
+    /** @return HasMany<OrderItem, $this> */
+    public function items(): HasMany
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+
+    public function total(): string
+    {
+        $totalInCents = $this->items->sum(fn (OrderItem $item): int => (int) str_replace('.', '', (string) $item->unit_price) * $item->quantity)
+            + (int) str_replace('.', '', (string) ($this->delivery_fee ?? '0.00'));
+
+        return intdiv($totalInCents, 100).'.'.str_pad((string) ($totalInCents % 100), 2, '0', STR_PAD_LEFT);
+    }
+
+    public function changeAmount(): ?string
+    {
+        if ($this->change_for === null || $this->payment_method !== PaymentMethod::Cash) {
+            return null;
+        }
+
+        $changeForInCents = (int) str_replace('.', '', (string) $this->change_for);
+        $totalInCents = (int) str_replace('.', '', $this->total());
+        $changeInCents = $changeForInCents - $totalInCents;
+
+        return intdiv($changeInCents, 100).'.'.str_pad((string) ($changeInCents % 100), 2, '0', STR_PAD_LEFT);
+    }
+}
