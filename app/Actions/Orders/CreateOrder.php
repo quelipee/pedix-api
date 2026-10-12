@@ -18,16 +18,17 @@ class CreateOrder
      * @param array<int, array{product_id: int, quantity: int, notes?: string|null, option_ids?: array<int, int>}> $items
      */
     public function handle(
-        string $modality,
+        string  $modality,
         ?string $customerName,
         ?string $customerPhone,
-        string $paymentMethod,
-        bool $needsChange,
+        string  $paymentMethod,
+        bool    $needsChange,
         ?string $changeFor,
-        ?array $deliveryAddress,
+        ?array  $deliveryAddress,
         ?string $deliveryFee,
-        array $items,
-    ): Order {
+        array   $items,
+    ): Order
+    {
         return DB::transaction(function () use (
             $modality,
             $customerName,
@@ -51,23 +52,23 @@ class CreateOrder
             }
 
             $selectedOptionsByItem = collect($items)->map(
-                fn (array $item, int $index) => $this->selectedOptions($products->get($item['product_id']), $item['option_ids'] ?? [], $index),
+                fn(array $item, int $index) => $this->selectedOptions($products->get($item['product_id']), $item['option_ids'] ?? [], $index),
             );
 
             if ($needsChange && $paymentMethod === PaymentMethod::Cash->value) {
                 $totalInCents = collect($items)->sum(function (array $item, int $index) use ($products, $selectedOptionsByItem): int {
-                    $unitPriceInCents = (int) str_replace(
-                        '.',
-                        '',
-                        (string) $products->get($item['product_id'])->price,
-                    );
+                        $unitPriceInCents = (int)str_replace(
+                            '.',
+                            '',
+                            (string)$products->get($item['product_id'])->price,
+                        );
 
-                    $optionsInCents = collect($selectedOptionsByItem->get($index))->sum(
-                        fn (array $option): int => $this->amountInCents($option['price']),
-                    );
+                        $optionsInCents = collect($selectedOptionsByItem->get($index))->sum(
+                            fn(array $option): int => $this->amountInCents($option['price']),
+                        );
 
-                    return ($unitPriceInCents + $optionsInCents) * $item['quantity'];
-                }) + ($modality === OrderModality::Delivery->value ? $this->amountInCents($deliveryFee) : 0);
+                        return ($unitPriceInCents + $optionsInCents) * $item['quantity'];
+                    }) + ($modality === OrderModality::Delivery->value ? $this->amountInCents($deliveryFee) : 0);
                 $changeForInCents = $this->amountInCents($changeFor);
 
                 if ($changeForInCents < $totalInCents) {
@@ -92,8 +93,8 @@ class CreateOrder
             foreach ($items as $index => $item) {
                 $product = $products->get($item['product_id']);
                 $selectedOptions = $selectedOptionsByItem->get($index);
-                $unitPriceInCents = $this->amountInCents((string) $product->price)
-                    + collect($selectedOptions)->sum(fn (array $option): int => $this->amountInCents($option['price']));
+                $unitPriceInCents = $this->amountInCents((string)$product->price)
+                    + collect($selectedOptions)->sum(fn(array $option): int => $this->amountInCents($option['price']));
                 $order->items()->create([
                     'product_id' => $product->id,
                     'product_name' => $product->name,
@@ -110,14 +111,14 @@ class CreateOrder
 
     private function amountInCents(?string $amount): int
     {
-        [$wholeReais, $fractionalReais] = array_pad(explode('.', (string) $amount, 2), 2, '');
+        [$wholeReais, $fractionalReais] = array_pad(explode('.', (string)$amount, 2), 2, '');
 
-        return (int) $wholeReais * 100 + (int) str_pad($fractionalReais, 2, '0');
+        return (int)$wholeReais * 100 + (int)str_pad($fractionalReais, 2, '0');
     }
 
     private function amountFromCents(int $amount): string
     {
-        return intdiv($amount, 100).'.'.str_pad((string) ($amount % 100), 2, '0', STR_PAD_LEFT);
+        return intdiv($amount, 100) . '.' . str_pad((string)($amount % 100), 2, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -127,10 +128,10 @@ class CreateOrder
     private function selectedOptions(Product $product, array $optionIds, int $itemIndex): array
     {
         $availableOptions = $product->optionGroups
-            ->flatMap(fn ($group) => $group->options->where('active', true))
+            ->flatMap(fn($group) => $group->options->where('active', true))
             ->keyBy('id');
 
-        if (collect($optionIds)->contains(fn (int $optionId): bool => ! $availableOptions->has($optionId))) {
+        if (collect($optionIds)->contains(fn(int $optionId): bool => !$availableOptions->has($optionId))) {
             throw ValidationException::withMessages([
                 "items.{$itemIndex}.option_ids" => 'Uma ou mais opções não estão disponíveis para este produto.',
             ]);
@@ -138,7 +139,7 @@ class CreateOrder
 
         foreach ($product->optionGroups as $group) {
             $selectedCount = collect($optionIds)->filter(
-                fn (int $optionId): bool => $group->options->contains('id', $optionId),
+                fn(int $optionId): bool => $group->options->contains('id', $optionId),
             )->count();
 
             if ($selectedCount < $group->min_selections || $selectedCount > $group->max_selections) {
@@ -152,7 +153,7 @@ class CreateOrder
             /** @var ProductOption $option */
             $option = $availableOptions->get($optionId);
             $group = $product->optionGroups->first(
-                fn ($group): bool => $group->options->contains('id', $optionId),
+                fn($group): bool => $group->options->contains('id', $optionId),
             );
 
             return [

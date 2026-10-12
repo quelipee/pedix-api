@@ -15,7 +15,7 @@ class Order extends Model
     /** @use HasFactory<OrderFactory> */
     use HasFactory;
 
-    protected $fillable = ['modality', 'customer_name', 'customer_phone', 'delivery_address', 'delivery_fee', 'status', 'payment_method', 'change_for'];
+    protected $fillable = ['modality', 'customer_name', 'customer_phone', 'delivery_address', 'delivery_fee', 'status', 'payment_method', 'change_for', 'product_id', 'product_name', 'unit_price', 'quantity', 'notes', 'selected_options'];
 
     protected function casts(): array
     {
