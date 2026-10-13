@@ -48,6 +48,7 @@ class OrderResource extends JsonResource
             'total' => $this->whenLoaded('items', fn (): string => $this->total()),
             'items' => OrderItemResource::collection($this->whenLoaded('items')),
             'createdAt' => $this->created_at?->toISOString(),
+            'finalizedAt' => $this->finalized_at?->toISOString(),
         ];
     }
 }

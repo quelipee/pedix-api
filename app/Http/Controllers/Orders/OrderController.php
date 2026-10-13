@@ -14,6 +14,7 @@ use App\Http\Requests\Orders\DispatchOrderRequest;
 use App\Http\Requests\Orders\StoreOrderRequest;
 use App\Http\Resources\OrderResource;
 use App\Http\Resources\ProductResource;
+use App\Models\CashRegister;
 use App\Models\Courier;
 use App\Models\Order;
 use App\Models\Product;
@@ -53,7 +54,13 @@ class OrderController extends Controller
 
     public function advance(AdvanceOrderStatusRequest $request, Order $order, AdvanceOrderStatus $advanceOrderStatus): JsonResponse
     {
-        $advanceOrderStatus->handle($order, $request->validated('status'));
+        $cashRegister = CashRegister::query()
+            ->where('team_id', $request->user()->current_team_id)
+            ->whereNull('closed_at')
+            ->latest('opened_at')
+            ->first();
+
+        $advanceOrderStatus->handle($order, $request->validated('status'), $cashRegister);
 
         return OrderResource::make($order->refresh()->load('items'))->response();
     }

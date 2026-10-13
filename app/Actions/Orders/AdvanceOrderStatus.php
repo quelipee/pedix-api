@@ -4,15 +4,16 @@ namespace App\Actions\Orders;
 
 use App\Enums\OrderModality;
 use App\Enums\OrderStatus;
+use App\Models\CashRegister;
 use App\Models\Order;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class AdvanceOrderStatus
 {
-    public function handle(Order $order, string $status): Order
+    public function handle(Order $order, string $status, ?CashRegister $cashRegister = null): Order
     {
-        return DB::transaction(function () use ($order, $status): Order {
+        return DB::transaction(function () use ($order, $status, $cashRegister): Order {
             $lockedOrder = Order::query()->lockForUpdate()->findOrFail($order->id);
             $currentStatus = $lockedOrder->status;
             $nextStatus = $currentStatus->next();
@@ -44,7 +45,17 @@ class AdvanceOrderStatus
                 throw ValidationException::withMessages(['status' => 'O pedido só pode avançar para a próxima etapa.']);
             }
 
-            $lockedOrder->update(['status' => $requestedStatus]);
+            $attributes = ['status' => $requestedStatus];
+
+            if ($requestedStatus === OrderStatus::Finalized && $cashRegister) {
+                $attributes['cash_register_id'] = $cashRegister->id;
+            }
+
+            if ($requestedStatus === OrderStatus::Finalized) {
+                $attributes['finalized_at'] = now();
+            }
+
+            $lockedOrder->update($attributes);
 
             return $lockedOrder;
         });

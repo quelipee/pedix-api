@@ -21,6 +21,7 @@ import type { Team } from '@/types';
 import type { Courier, OrderDetails, OrderStatus } from '@/types/orders';
 
 type StatusFilter = OrderStatus | 'todos';
+type PeriodFilter = 'today' | '7d' | '30d' | 'custom' | 'all';
 
 const props = defineProps<{
     orders: {
@@ -29,7 +30,13 @@ const props = defineProps<{
         lastPage: number;
         total: number;
     };
-    filters: { status: StatusFilter; q: string };
+    filters: {
+        status: StatusFilter;
+        q: string;
+        period: PeriodFilter;
+        dateFrom: string | null;
+        dateTo: string | null;
+    };
     statusCounts: Record<StatusFilter, number>;
     couriers: Courier[];
     currentTeam?: Team | null;
@@ -40,6 +47,8 @@ const selectedOrder = ref<OrderDetails | null>(null);
 const dispatchingOrder = ref<OrderDetails | null>(null);
 const courierManagerOpen = ref(false);
 const searchTerm = ref(props.filters.q);
+const dateFrom = ref(props.filters.dateFrom ?? '');
+const dateTo = ref(props.filters.dateTo ?? '');
 const advancingOrderId = ref<number | null>(null);
 const advanceError = ref('');
 const advanceForm = useHttp<{ status: OrderStatus }>({ status: 'em_preparo' });
@@ -64,6 +73,12 @@ const statusTabs: { value: StatusFilter; label: string }[] = [
     { value: 'pronto', label: 'Prontos' },
     { value: 'finalizado', label: 'Finalizados' },
 ];
+const periodTabs: { value: PeriodFilter; label: string }[] = [
+    { value: 'today', label: 'Hoje' },
+    { value: '7d', label: '7 dias' },
+    { value: '30d', label: '30 dias' },
+    { value: 'all', label: 'Todo o período' },
+];
 
 const statusClasses: Record<OrderStatus, string> = {
     novo: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
@@ -86,11 +101,19 @@ watch(
         searchTerm.value = query;
     },
 );
+watch(
+    () => [props.filters.dateFrom, props.filters.dateTo],
+    ([from, to]) => {
+        dateFrom.value = from ?? '';
+        dateTo.value = to ?? '';
+    },
+);
 
 function visitOrders(
     status: StatusFilter,
     query: string,
     pageNumber = 1,
+    period: PeriodFilter = props.filters.period,
 ): void {
     selectedOrder.value = null;
     advanceError.value = '';
@@ -99,6 +122,14 @@ function visitOrders(
         {
             status,
             q: query.trim(),
+            ...(status === 'finalizado'
+                ? {
+                      period,
+                      ...(period === 'custom'
+                          ? { date_from: dateFrom.value, date_to: dateTo.value }
+                          : {}),
+                  }
+                : {}),
             ...(pageNumber > 1 ? { page: pageNumber } : {}),
         },
         {
@@ -202,7 +233,16 @@ defineOptions({
                                 : 'border-transparent text-muted-foreground hover:bg-muted hover:text-foreground'
                         "
                         :aria-pressed="filters.status === tab.value"
-                        @click="visitOrders(tab.value, searchTerm)"
+                        @click="
+                            visitOrders(
+                                tab.value,
+                                searchTerm,
+                                1,
+                                tab.value === 'finalizado'
+                                    ? 'today'
+                                    : filters.period,
+                            )
+                        "
                     >
                         {{ tab.label }}
                         <span
@@ -212,6 +252,61 @@ defineOptions({
                         </span>
                     </button>
                 </nav>
+
+                <div v-if="filters.status === 'finalizado'" class="space-y-3">
+                    <p class="text-sm font-medium">Data de finalização</p>
+                    <div class="flex flex-wrap gap-2">
+                        <Button
+                            v-for="period in periodTabs"
+                            :key="period.value"
+                            type="button"
+                            size="sm"
+                            :variant="
+                                filters.period === period.value
+                                    ? 'default'
+                                    : 'outline'
+                            "
+                            @click="
+                                visitOrders(
+                                    'finalizado',
+                                    searchTerm,
+                                    1,
+                                    period.value,
+                                )
+                            "
+                        >
+                            {{ period.label }}
+                        </Button>
+                    </div>
+                    <form
+                        class="flex flex-wrap items-end gap-2"
+                        @submit.prevent="
+                            visitOrders('finalizado', searchTerm, 1, 'custom')
+                        "
+                    >
+                        <label class="grid gap-1 text-xs text-muted-foreground">
+                            De
+                            <input
+                                v-model="dateFrom"
+                                type="date"
+                                :max="dateTo || undefined"
+                                class="h-9 rounded-lg border border-input bg-background px-3 text-sm text-foreground"
+                            />
+                        </label>
+                        <label class="grid gap-1 text-xs text-muted-foreground">
+                            Até
+                            <input
+                                v-model="dateTo"
+                                type="date"
+                                :min="dateFrom || undefined"
+                                class="h-9 rounded-lg border border-input bg-background px-3 text-sm text-foreground"
+                            />
+                        </label>
+                        <Button type="submit" size="sm" variant="outline">
+                            Aplicar datas
+                        </Button>
+                    </form>
+                </div>
 
                 <form
                     class="flex flex-wrap gap-2"
@@ -309,7 +404,14 @@ defineOptions({
                         class="flex flex-wrap items-center justify-between gap-2 text-sm"
                     >
                         <span class="text-muted-foreground">
-                            {{ formatOrderDate(order.createdAt) }} ·
+                            {{
+                                formatOrderDate(
+                                    order.status === 'finalizado'
+                                        ? order.finalizedAt
+                                        : order.createdAt,
+                                )
+                            }}
+                            ·
                             {{ order.items.length }}
                             {{ order.items.length === 1 ? 'item' : 'itens' }}
                         </span>
@@ -395,7 +497,9 @@ defineOptions({
                     {{
                         filters.q
                             ? 'Tente outro número, nome ou telefone.'
-                            : 'Os pedidos desta etapa aparecerão aqui.'
+                            : filters.status === 'finalizado'
+                              ? 'Escolha outro período para consultar os pedidos finalizados.'
+                              : 'Os pedidos desta etapa aparecerão aqui.'
                     }}
                 </p>
                 <Link

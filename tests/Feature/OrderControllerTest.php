@@ -350,6 +350,7 @@ class OrderControllerTest extends TestCase
             'status' => 'finalizado',
             'payment_method' => null,
         ]);
+        $this->assertNotNull($order->refresh()->finalized_at);
     }
 
     public function test_an_order_cannot_skip_a_status(): void

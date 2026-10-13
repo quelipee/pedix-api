@@ -8,6 +8,7 @@ export type OrderDetails = {
     statusLabel: string;
     nextStatus?: OrderStatus | null;
     createdAt: string | null;
+    finalizedAt: string | null;
     customerName: string | null;
     customerPhone: string | null;
     paymentMethodLabel: string | null;

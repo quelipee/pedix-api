@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\CashRegisters\CashRegisterController;
+use App\Http\Controllers\CashRegisters\CashRegisterPageController;
 use App\Http\Controllers\Couriers\CourierController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Orders\CreateOrderPageController;
@@ -32,6 +34,7 @@ Route::prefix('{current_team}')
         Route::get('products', ProductCatalogController::class)->name('products.catalog');
         Route::get('products/create', CreateProductPageController::class)->name('products.create');
         Route::get('products/{product}/edit', EditProductPageController::class)->name('products.edit');
+        Route::get('cash-register', CashRegisterPageController::class)->name('cash-registers.index');
     });
 
 Route::middleware(['auth'])->group(function () {
@@ -46,6 +49,9 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('orders/{order}/dispatch', [OrderController::class, 'dispatch'])->name('orders.dispatch');
         Route::post('couriers', [CourierController::class, 'store'])->name('couriers.store');
         Route::patch('couriers/{courier}/availability', [CourierController::class, 'updateAvailability'])->name('couriers.availability');
+        Route::post('cash-registers/open', [CashRegisterController::class, 'open'])->name('cash-registers.open');
+        Route::post('cash-registers/{cashRegister}/movements', [CashRegisterController::class, 'movement'])->name('cash-registers.movements.store');
+        Route::patch('cash-registers/{cashRegister}/close', [CashRegisterController::class, 'close'])->name('cash-registers.close');
     });
     Route::post('invitations/{invitation}/accept', [TeamInvitationController::class, 'accept'])->name('invitations.accept');
     Route::delete('invitations/{invitation}', [TeamInvitationController::class, 'decline'])->name('invitations.decline');

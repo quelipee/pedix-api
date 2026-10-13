@@ -24,6 +24,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $deleted_at
  * @property-read Collection<int, TeamInvitation> $invitations
  * @property-read Collection<int, Courier> $couriers
+ * @property-read Collection<int, CashRegister> $cashRegisters
  * @property-read Collection<int, Membership> $memberships
  * @property-read Collection<int, User> $members
  */
@@ -100,6 +101,12 @@ class Team extends Model
     public function couriers(): HasMany
     {
         return $this->hasMany(Courier::class);
+    }
+
+    /** @return HasMany<CashRegister, $this> */
+    public function cashRegisters(): HasMany
+    {
+        return $this->hasMany(CashRegister::class);
     }
 
     /**

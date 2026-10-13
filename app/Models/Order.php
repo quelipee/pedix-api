@@ -21,8 +21,10 @@ use Illuminate\Support\Carbon;
  * @property array{postal_code: string, street: string, number: string, complement?: string|null, neighborhood: string, city: string, state: string}|null $delivery_address
  * @property string|null $delivery_fee
  * @property int|null $courier_id
+ * @property int|null $cash_register_id
  * @property Carbon|null $dispatched_at
  * @property OrderStatus $status
+ * @property Carbon|null $finalized_at
  * @property PaymentMethod|null $payment_method
  * @property string|null $change_for
  * @property Carbon|null $created_at
@@ -34,13 +36,14 @@ class Order extends Model
     /** @use HasFactory<OrderFactory> */
     use HasFactory;
 
-    protected $fillable = ['modality', 'customer_name', 'customer_phone', 'delivery_address', 'delivery_fee', 'courier_id', 'dispatched_at', 'status', 'payment_method', 'change_for', 'product_id', 'product_name', 'unit_price', 'quantity', 'notes', 'selected_options'];
+    protected $fillable = ['modality', 'customer_name', 'customer_phone', 'delivery_address', 'delivery_fee', 'courier_id', 'cash_register_id', 'dispatched_at', 'status', 'finalized_at', 'payment_method', 'change_for', 'product_id', 'product_name', 'unit_price', 'quantity', 'notes', 'selected_options'];
 
     protected function casts(): array
     {
         return [
             'modality' => OrderModality::class,
             'status' => OrderStatus::class,
+            'finalized_at' => 'datetime',
             'payment_method' => PaymentMethod::class,
             'change_for' => 'decimal:2',
             'delivery_fee' => 'decimal:2',
