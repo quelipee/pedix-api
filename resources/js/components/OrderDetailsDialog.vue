@@ -6,6 +6,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { Bike } from '@lucide/vue';
 import type { OrderDetails, OrderStatus } from '@/types/orders';
 
 defineProps<{ order: OrderDetails | null }>();
@@ -106,6 +107,22 @@ function formatOrderDate(value: string | null): string {
                         <p class="mt-1 text-xs text-muted-foreground">
                             Pagará com
                             {{ currency.format(Number(order.changeFor)) }}
+                        </p>
+                    </div>
+                </div>
+
+                <div
+                    v-if="order.courier"
+                    class="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 p-3"
+                >
+                    <Bike class="size-5 text-primary" />
+                    <div>
+                        <p class="text-xs text-muted-foreground">
+                            Motoboy responsável
+                        </p>
+                        <p class="font-medium">{{ order.courier.name }}</p>
+                        <p class="text-xs text-muted-foreground">
+                            {{ order.courier.phone }}
                         </p>
                     </div>
                 </div>

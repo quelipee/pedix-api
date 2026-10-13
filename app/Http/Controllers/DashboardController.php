@@ -33,12 +33,13 @@ class DashboardController extends Controller
             ]);
 
         $recentOrders = Order::query()
-            ->with('items')
+            ->with(['items', 'courier'])
             ->latest('created_at')
             ->limit(5)
-            ->get(['id', 'customer_name', 'customer_phone', 'payment_method', 'change_for', 'delivery_address', 'delivery_fee', 'modality', 'status', 'created_at'])
+            ->get(['id', 'customer_name', 'customer_phone', 'payment_method', 'change_for', 'delivery_address', 'delivery_fee', 'courier_id', 'dispatched_at', 'modality', 'status', 'created_at'])
             ->map(fn (Order $order): array => [
                 'id' => $order->id,
+                'modality' => $order->modality->value,
                 'customerName' => $order->customer_name,
                 'customerPhone' => $order->customer_phone,
                 'paymentMethodLabel' => $order->payment_method?->label(),
@@ -54,6 +55,12 @@ class DashboardController extends Controller
                     'city' => $order->delivery_address['city'],
                     'state' => $order->delivery_address['state'],
                 ] : null,
+                'courier' => $order->courier ? [
+                    'id' => $order->courier->id,
+                    'name' => $order->courier->name,
+                    'phone' => $order->courier->phone,
+                ] : null,
+                'dispatchedAt' => $order->dispatched_at?->toISOString(),
                 'modalityLabel' => $order->modality->label(),
                 'status' => $order->status->value,
                 'statusLabel' => $order->status->label(),

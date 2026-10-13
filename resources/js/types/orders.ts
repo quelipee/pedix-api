@@ -2,6 +2,7 @@ export type OrderStatus = 'novo' | 'em_preparo' | 'pronto' | 'finalizado';
 
 export type OrderDetails = {
     id: number;
+    modality: 'local' | 'retirada' | 'entrega';
     modalityLabel: string;
     status: OrderStatus;
     statusLabel: string;
@@ -22,6 +23,12 @@ export type OrderDetails = {
         city: string;
         state: string;
     } | null;
+    courier: {
+        id: number;
+        name: string;
+        phone: string;
+    } | null;
+    dispatchedAt: string | null;
     total: string;
     items: {
         productName: string;
@@ -35,4 +42,13 @@ export type OrderDetails = {
             price: string;
         }[];
     }[];
+};
+
+export type Courier = {
+    id: number;
+    name: string;
+    phone: string;
+    active: boolean;
+    available: boolean;
+    activeDeliveriesCount: number;
 };

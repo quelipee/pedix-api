@@ -9,6 +9,7 @@ use Database\Factories\OrderFactory;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
@@ -19,18 +20,21 @@ use Illuminate\Support\Carbon;
  * @property string|null $customer_phone
  * @property array{postal_code: string, street: string, number: string, complement?: string|null, neighborhood: string, city: string, state: string}|null $delivery_address
  * @property string|null $delivery_fee
+ * @property int|null $courier_id
+ * @property Carbon|null $dispatched_at
  * @property OrderStatus $status
  * @property PaymentMethod|null $payment_method
  * @property string|null $change_for
  * @property Carbon|null $created_at
  * @property-read Collection<int, OrderItem> $items
+ * @property-read Courier|null $courier
  */
 class Order extends Model
 {
     /** @use HasFactory<OrderFactory> */
     use HasFactory;
 
-    protected $fillable = ['modality', 'customer_name', 'customer_phone', 'delivery_address', 'delivery_fee', 'status', 'payment_method', 'change_for', 'product_id', 'product_name', 'unit_price', 'quantity', 'notes', 'selected_options'];
+    protected $fillable = ['modality', 'customer_name', 'customer_phone', 'delivery_address', 'delivery_fee', 'courier_id', 'dispatched_at', 'status', 'payment_method', 'change_for', 'product_id', 'product_name', 'unit_price', 'quantity', 'notes', 'selected_options'];
 
     protected function casts(): array
     {
@@ -41,6 +45,7 @@ class Order extends Model
             'change_for' => 'decimal:2',
             'delivery_fee' => 'decimal:2',
             'delivery_address' => 'array',
+            'dispatched_at' => 'datetime',
         ];
     }
 
@@ -48,6 +53,12 @@ class Order extends Model
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    /** @return BelongsTo<Courier, $this> */
+    public function courier(): BelongsTo
+    {
+        return $this->belongsTo(Courier::class);
     }
 
     public function total(): string

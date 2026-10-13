@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\Couriers\CourierController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Orders\CreateOrderPageController;
 use App\Http\Controllers\Orders\OrderController;
@@ -42,6 +43,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
         Route::post('orders', [OrderController::class, 'store'])->name('orders.store');
         Route::patch('orders/{order}/advance', [OrderController::class, 'advance'])->name('orders.advance');
+        Route::patch('orders/{order}/dispatch', [OrderController::class, 'dispatch'])->name('orders.dispatch');
+        Route::post('couriers', [CourierController::class, 'store'])->name('couriers.store');
+        Route::patch('couriers/{courier}/availability', [CourierController::class, 'updateAvailability'])->name('couriers.availability');
     });
     Route::post('invitations/{invitation}/accept', [TeamInvitationController::class, 'accept'])->name('invitations.accept');
     Route::delete('invitations/{invitation}', [TeamInvitationController::class, 'decline'])->name('invitations.decline');

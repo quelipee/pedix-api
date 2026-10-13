@@ -36,6 +36,12 @@ class OrderResource extends JsonResource
                 'city' => $this->delivery_address['city'],
                 'state' => $this->delivery_address['state'],
             ] : null,
+            'courier' => $this->courier ? [
+                'id' => $this->courier->id,
+                'name' => $this->courier->name,
+                'phone' => $this->courier->phone,
+            ] : null,
+            'dispatchedAt' => $this->dispatched_at?->toISOString(),
             'status' => $this->status->value,
             'statusLabel' => $this->status->label(),
             'nextStatus' => $this->status->next()?->value,

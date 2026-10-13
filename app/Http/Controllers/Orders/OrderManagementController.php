@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Orders;
 use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\OrderResource;
+use App\Models\Courier;
 use App\Models\Order;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -31,7 +32,7 @@ class OrderManagementController extends Controller
             ->pluck('total', 'status');
 
         $orders = Order::query()
-            ->with('items')
+            ->with(['items', 'courier'])
             ->when($status !== 'todos', fn (Builder $query): Builder => $query->where('status', $status))
             ->when($search !== '', function (Builder $query) use ($search): void {
                 $query->where(function (Builder $query) use ($search): void {
@@ -60,6 +61,21 @@ class OrderManagementController extends Controller
                     $orderStatus->value => (int) $statusCounts->get($orderStatus->value, 0),
                 ])
                 ->put('todos', (int) $statusCounts->sum()),
+            'couriers' => Courier::query()
+                ->where('team_id', $request->user()->current_team_id)
+                ->withCount(['orders as active_deliveries_count' => fn (Builder $query): Builder => $query
+                    ->whereNotNull('dispatched_at')
+                    ->where('status', '!=', OrderStatus::Finalized)])
+                ->orderBy('name')
+                ->get()
+                ->map(fn (Courier $courier): array => [
+                    'id' => $courier->id,
+                    'name' => $courier->name,
+                    'phone' => $courier->phone,
+                    'active' => $courier->active,
+                    'available' => $courier->active,
+                    'activeDeliveriesCount' => $courier->active_deliveries_count,
+                ]),
         ]);
     }
 }

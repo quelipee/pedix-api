@@ -1,8 +1,16 @@
 <script setup lang="ts">
 import { Head, Link, router, useHttp, usePage } from '@inertiajs/vue3';
-import { ArrowRight, ClipboardList, PackageOpen, Search } from '@lucide/vue';
+import {
+    ArrowRight,
+    Bike,
+    ClipboardList,
+    PackageOpen,
+    Search,
+} from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import OrderDetailsDialog from '@/components/OrderDetailsDialog.vue';
+import CourierManagerDialog from '@/components/CourierManagerDialog.vue';
+import DispatchOrderDialog from '@/components/DispatchOrderDialog.vue';
 import { Button } from '@/components/ui/button';
 import {
     advance as advanceOrder,
@@ -10,7 +18,7 @@ import {
     manage as manageOrders,
 } from '@/routes/orders';
 import type { Team } from '@/types';
-import type { OrderDetails, OrderStatus } from '@/types/orders';
+import type { Courier, OrderDetails, OrderStatus } from '@/types/orders';
 
 type StatusFilter = OrderStatus | 'todos';
 
@@ -23,11 +31,14 @@ const props = defineProps<{
     };
     filters: { status: StatusFilter; q: string };
     statusCounts: Record<StatusFilter, number>;
+    couriers: Courier[];
     currentTeam?: Team | null;
 }>();
 
 const page = usePage();
 const selectedOrder = ref<OrderDetails | null>(null);
+const dispatchingOrder = ref<OrderDetails | null>(null);
+const courierManagerOpen = ref(false);
 const searchTerm = ref(props.filters.q);
 const advancingOrderId = ref<number | null>(null);
 const advanceError = ref('');
@@ -138,18 +149,38 @@ defineOptions({
     <Head title="Pedidos" />
 
     <OrderDetailsDialog :order="selectedOrder" @close="selectedOrder = null" />
+    <CourierManagerDialog
+        v-model:open="courierManagerOpen"
+        :couriers="couriers"
+    />
+    <DispatchOrderDialog
+        :order="dispatchingOrder"
+        :couriers="couriers"
+        @close="dispatchingOrder = null"
+    />
 
     <div
         class="mx-auto flex w-full max-w-[1600px] flex-col gap-6 p-4 sm:p-6 xl:p-8"
     >
-        <header class="space-y-1">
-            <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
-                Pedidos
-            </h1>
-            <p class="text-sm text-muted-foreground">
-                Acompanhe os pedidos e avance cada um pela cozinha até a
-                finalização.
-            </p>
+        <header class="flex flex-wrap items-end justify-between gap-4">
+            <div class="space-y-1">
+                <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
+                    Pedidos
+                </h1>
+                <p class="text-sm text-muted-foreground">
+                    Acompanhe os pedidos e avance cada um pela cozinha até a
+                    finalização.
+                </p>
+            </div>
+            <Button
+                type="button"
+                variant="outline"
+                class="gap-2 rounded-xl"
+                @click="courierManagerOpen = true"
+            >
+                <Bike class="size-4" />
+                Motoboys
+            </Button>
         </header>
 
         <section
@@ -264,6 +295,17 @@ defineOptions({
                     </div>
 
                     <div
+                        v-if="order.courier"
+                        class="flex items-center gap-2 rounded-lg bg-primary/5 px-3 py-2 text-sm"
+                    >
+                        <Bike class="size-4 text-primary" />
+                        <span>
+                            Motoboy:
+                            <strong>{{ order.courier.name }}</strong>
+                        </span>
+                    </div>
+
+                    <div
                         class="flex flex-wrap items-center justify-between gap-2 text-sm"
                     >
                         <span class="text-muted-foreground">
@@ -286,27 +328,55 @@ defineOptions({
                         >
                             Ver detalhes
                         </button>
-                        <Button
-                            v-if="order.nextStatus"
-                            type="button"
-                            size="sm"
-                            class="gap-2 rounded-lg"
-                            :disabled="advanceForm.processing"
-                            @click="advance(order)"
-                        >
-                            {{
-                                advancingOrderId === order.id
-                                    ? 'Atualizando...'
-                                    : nextStatusLabels[order.status]
-                            }}
-                            <ArrowRight
-                                v-if="advancingOrderId !== order.id"
-                                class="size-4"
-                            />
-                        </Button>
-                        <span v-else class="text-xs text-muted-foreground"
-                            >Concluído</span
-                        >
+                        <div class="flex flex-wrap justify-end gap-2">
+                            <Button
+                                v-if="
+                                    (order.status === 'em_preparo' ||
+                                        order.status === 'pronto') &&
+                                    order.modality === 'entrega'
+                                "
+                                type="button"
+                                size="sm"
+                                :variant="order.courier ? 'outline' : 'default'"
+                                class="gap-2 rounded-lg"
+                                @click="dispatchingOrder = order"
+                            >
+                                <Bike class="size-4" />
+                                {{
+                                    order.courier
+                                        ? 'Trocar motoboy'
+                                        : 'Selecionar motoboy'
+                                }}
+                            </Button>
+                            <Button
+                                v-if="
+                                    order.nextStatus &&
+                                    (order.status === 'novo' ||
+                                        order.modality !== 'entrega' ||
+                                        order.courier)
+                                "
+                                type="button"
+                                size="sm"
+                                class="gap-2 rounded-lg"
+                                :disabled="advanceForm.processing"
+                                @click="advance(order)"
+                            >
+                                {{
+                                    advancingOrderId === order.id
+                                        ? 'Atualizando...'
+                                        : nextStatusLabels[order.status]
+                                }}
+                                <ArrowRight
+                                    v-if="advancingOrderId !== order.id"
+                                    class="size-4"
+                                />
+                            </Button>
+                            <span
+                                v-if="!order.nextStatus"
+                                class="self-center text-xs text-muted-foreground"
+                                >Concluído</span
+                            >
+                        </div>
                     </div>
                 </article>
             </div>
