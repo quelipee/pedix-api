@@ -27,6 +27,11 @@ class StoreOrderRequest extends FormRequest
     {
         return [
             'modality' => ['required', Rule::enum(OrderModality::class)],
+            'customer_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('customers', 'id')->where('team_id', $this->user()->current_team_id),
+            ],
             'payment_method' => ['required', Rule::enum(PaymentMethod::class)],
             'needs_change' => ['exclude_unless:payment_method,dinheiro', 'boolean'],
             'change_for' => ['exclude_unless:payment_method,dinheiro', 'nullable', 'required_if:needs_change,true', 'numeric', 'gt:0', 'decimal:0,2', 'max:99999999.99'],

@@ -2,6 +2,7 @@
 
 namespace App\Actions\Orders;
 
+use App\Actions\Customers\ResolveOrderCustomer;
 use App\Enums\OrderModality;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
@@ -13,11 +14,15 @@ use Illuminate\Validation\ValidationException;
 
 class CreateOrder
 {
+    public function __construct(private readonly ResolveOrderCustomer $resolveOrderCustomer) {}
+
     /**
-     * @param  array<string, string|null>|null  $deliveryAddress
+     * @param  array{postal_code: string, street: string, number: string, complement?: string|null, neighborhood: string, city: string, state: string}|null  $deliveryAddress
      * @param  array<int, array{product_id: int, quantity: int, notes?: string|null, option_ids?: array<int, int>}>  $items
      */
     public function handle(
+        int $teamId,
+        ?int $customerId,
         string $modality,
         ?string $customerName,
         ?string $customerPhone,
@@ -29,6 +34,8 @@ class CreateOrder
         array $items,
     ): Order {
         return DB::transaction(function () use (
+            $teamId,
+            $customerId,
             $modality,
             $customerName,
             $customerPhone,
@@ -77,7 +84,16 @@ class CreateOrder
                 }
             }
 
+            $customer = $this->resolveOrderCustomer->handle(
+                $teamId,
+                $customerId,
+                $customerName,
+                $customerPhone,
+                $modality === OrderModality::Delivery->value ? $deliveryAddress : null,
+            );
+
             $order = Order::query()->create([
+                'customer_id' => $customer?->id,
                 'modality' => OrderModality::from($modality),
                 'customer_name' => $customerName,
                 'customer_phone' => $customerPhone,

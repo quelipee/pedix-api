@@ -37,7 +37,12 @@ class OrderController extends Controller
 
     public function store(StoreOrderRequest $request, CreateOrder $createOrder): JsonResponse
     {
+        $teamId = $request->user()->current_team_id;
+        abort_if($teamId === null, 403);
+
         $order = $createOrder->handle(
+            $teamId,
+            $request->integer('customer_id') ?: null,
             $request->validated('modality'),
             $request->validated('customer_name'),
             $request->validated('customer_phone'),

@@ -17,6 +17,7 @@ import type { Courier, OrderDetails } from '@/types/orders';
 const props = defineProps<{
     order: OrderDetails | null;
     couriers: Courier[];
+    reloadOnly?: string[];
 }>();
 const emit = defineEmits<{ close: [] }>();
 const form = useHttp<{ courier_id: number | null }>({ courier_id: null });
@@ -53,7 +54,7 @@ function submit(): void {
     form.patch(dispatch(props.order.id).url, {
         onSuccess: () => {
             handleOpenChange(false);
-            router.reload({ only: ['orders', 'couriers'] });
+            router.reload({ only: props.reloadOnly ?? ['orders', 'couriers'] });
         },
     });
 }

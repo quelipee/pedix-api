@@ -2,6 +2,7 @@ export type OrderStatus = 'novo' | 'em_preparo' | 'pronto' | 'finalizado';
 
 export type OrderDetails = {
     id: number;
+    customerId: number | null;
     modality: 'local' | 'retirada' | 'entrega';
     modalityLabel: string;
     status: OrderStatus;
@@ -32,6 +33,7 @@ export type OrderDetails = {
     dispatchedAt: string | null;
     total: string;
     items: {
+        id: number;
         productName: string;
         quantity: number;
         unitPrice: string;

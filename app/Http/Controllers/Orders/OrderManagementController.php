@@ -72,7 +72,7 @@ class OrderManagementController extends Controller
             ->paginate(12)
             ->withQueryString();
 
-        return Inertia::render('orders/Index', [
+        return Inertia::render('orders/History', [
             'orders' => [
                 'data' => OrderResource::collection($orders->getCollection())->response($request)->getData(true)['data'],
                 'currentPage' => $orders->currentPage(),

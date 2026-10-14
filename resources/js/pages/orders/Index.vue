@@ -1,165 +1,170 @@
 <script setup lang="ts">
 import { Head, Link, router, useHttp, usePage } from '@inertiajs/vue3';
+import { useIntervalFn } from '@vueuse/core';
 import {
     ArrowRight,
     Bike,
     ClipboardList,
-    PackageOpen,
-    Search,
+    Clock3,
+    CookingPot,
+    PackageCheck,
+    ScrollText,
+    RefreshCw,
+    UtensilsCrossed,
 } from '@lucide/vue';
-import { computed, ref, watch } from 'vue';
-import OrderDetailsDialog from '@/components/OrderDetailsDialog.vue';
-import CourierManagerDialog from '@/components/CourierManagerDialog.vue';
+import { computed, ref } from 'vue';
 import DispatchOrderDialog from '@/components/DispatchOrderDialog.vue';
+import OrderDetailsDialog from '@/components/OrderDetailsDialog.vue';
 import { Button } from '@/components/ui/button';
 import {
     advance as advanceOrder,
-    create as createOrder,
-    manage as manageOrders,
+    history as orderHistory,
 } from '@/routes/orders';
 import type { Team } from '@/types';
 import type { Courier, OrderDetails, OrderStatus } from '@/types/orders';
 
-type StatusFilter = OrderStatus | 'todos';
-type PeriodFilter = 'today' | '7d' | '30d' | 'custom' | 'all';
+type KitchenStatus = 'novo' | 'em_preparo' | 'pronto';
 
 const props = defineProps<{
-    orders: {
-        data: OrderDetails[];
-        currentPage: number;
-        lastPage: number;
-        total: number;
-    };
-    filters: {
-        status: StatusFilter;
-        q: string;
-        period: PeriodFilter;
-        dateFrom: string | null;
-        dateTo: string | null;
-    };
-    statusCounts: Record<StatusFilter, number>;
+    columns: Record<KitchenStatus, OrderDetails[]>;
+    counts: Record<KitchenStatus, number>;
     couriers: Courier[];
-    currentTeam?: Team | null;
+    refreshedAt: string;
 }>();
 
 const page = usePage();
+const currentTeam = computed(() => page.props.currentTeam as Team | null);
+const historyUrl = computed(() =>
+    currentTeam.value ? orderHistory(currentTeam.value.slug).url : '/',
+);
 const selectedOrder = ref<OrderDetails | null>(null);
 const dispatchingOrder = ref<OrderDetails | null>(null);
-const courierManagerOpen = ref(false);
-const searchTerm = ref(props.filters.q);
-const dateFrom = ref(props.filters.dateFrom ?? '');
-const dateTo = ref(props.filters.dateTo ?? '');
 const advancingOrderId = ref<number | null>(null);
 const advanceError = ref('');
+const refreshing = ref(false);
+const now = ref(Date.now());
 const advanceForm = useHttp<{ status: OrderStatus }>({ status: 'em_preparo' });
-const currentTeam = computed(
-    () => props.currentTeam ?? (page.props.currentTeam as Team | null),
-);
-const manageUrl = computed(() =>
-    currentTeam.value ? manageOrders(currentTeam.value.slug).url : '/',
-);
-const createUrl = computed(() =>
-    currentTeam.value ? createOrder(currentTeam.value.slug).url : '/',
-);
-const currency = new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-});
 
-const statusTabs: { value: StatusFilter; label: string }[] = [
-    { value: 'todos', label: 'Todos' },
-    { value: 'novo', label: 'Novos' },
-    { value: 'em_preparo', label: 'Em preparo' },
-    { value: 'pronto', label: 'Prontos' },
-    { value: 'finalizado', label: 'Finalizados' },
-];
-const periodTabs: { value: PeriodFilter; label: string }[] = [
-    { value: 'today', label: 'Hoje' },
-    { value: '7d', label: '7 dias' },
-    { value: '30d', label: '30 dias' },
-    { value: 'all', label: 'Todo o período' },
-];
-
-const statusClasses: Record<OrderStatus, string> = {
-    novo: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
-    em_preparo:
-        'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300',
-    pronto: 'bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300',
-    finalizado: 'bg-muted text-muted-foreground',
-};
-
-const nextStatusLabels: Record<OrderStatus, string> = {
-    novo: 'Iniciar preparo',
-    em_preparo: 'Marcar pronto',
-    pronto: 'Finalizar pedido',
-    finalizado: '',
-};
-
-watch(
-    () => props.filters.q,
-    (query) => {
-        searchTerm.value = query;
+const columnDefinitions: {
+    status: KitchenStatus;
+    title: string;
+    description: string;
+    emptyMessage: string;
+}[] = [
+    {
+        status: 'novo',
+        title: 'Novos',
+        description: 'Aguardando início',
+        emptyMessage: 'Nenhum pedido aguardando preparo.',
     },
-);
-watch(
-    () => [props.filters.dateFrom, props.filters.dateTo],
-    ([from, to]) => {
-        dateFrom.value = from ?? '';
-        dateTo.value = to ?? '';
+    {
+        status: 'em_preparo',
+        title: 'Em preparo',
+        description: 'Na cozinha agora',
+        emptyMessage: 'Nenhum pedido sendo preparado.',
     },
+    {
+        status: 'pronto',
+        title: 'Prontos',
+        description: 'Aguardando retirada',
+        emptyMessage: 'Nenhum pedido pronto no momento.',
+    },
+];
+
+const activeOrderCount = computed(() =>
+    Object.values(props.counts).reduce((total, count) => total + count, 0),
+);
+const refreshedTime = computed(() =>
+    new Intl.DateTimeFormat('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+    }).format(new Date(props.refreshedAt)),
 );
 
-function visitOrders(
-    status: StatusFilter,
-    query: string,
-    pageNumber = 1,
-    period: PeriodFilter = props.filters.period,
-): void {
-    selectedOrder.value = null;
-    advanceError.value = '';
-    router.get(
-        manageUrl.value,
-        {
-            status,
-            q: query.trim(),
-            ...(status === 'finalizado'
-                ? {
-                      period,
-                      ...(period === 'custom'
-                          ? { date_from: dateFrom.value, date_to: dateTo.value }
-                          : {}),
-                  }
-                : {}),
-            ...(pageNumber > 1 ? { page: pageNumber } : {}),
-        },
-        {
-            preserveState: true,
-            replace: true,
-        },
-    );
-}
-
-function formatOrderDate(value: string | null): string {
-    if (!value) {
-        return 'Sem data';
-    }
-
-    return new Intl.DateTimeFormat('pt-BR', {
-        dateStyle: 'short',
-        timeStyle: 'short',
-    }).format(new Date(value));
-}
-
-function advance(order: OrderDetails): void {
-    if (!order.nextStatus || advanceForm.processing) {
+function refreshBoard(force = false): void {
+    if (!force && (advanceForm.processing || dispatchingOrder.value !== null)) {
         return;
     }
 
+    refreshing.value = true;
+    router.reload({
+        only: ['columns', 'counts', 'couriers', 'refreshedAt'],
+        onFinish: () => {
+            refreshing.value = false;
+        },
+    });
+}
+
+useIntervalFn(() => {
+    if (
+        typeof document === 'undefined' ||
+        document.visibilityState === 'visible'
+    ) {
+        refreshBoard();
+    }
+}, 15000);
+
+useIntervalFn(() => {
+    now.value = Date.now();
+}, 60000);
+
+function minutesSince(value: string | null): number {
+    if (!value) return 0;
+
+    return Math.max(
+        0,
+        Math.floor((now.value - new Date(value).getTime()) / 60000),
+    );
+}
+
+function waitingTime(value: string | null): string {
+    const minutes = minutesSince(value);
+
+    if (minutes < 1) return 'Agora';
+    if (minutes < 60) return `${minutes} min`;
+
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+
+    return remainingMinutes ? `${hours}h ${remainingMinutes}min` : `${hours}h`;
+}
+
+function waitingClass(order: OrderDetails): string {
+    const minutes = minutesSince(order.createdAt);
+
+    if (minutes >= 30) return 'bg-rose-500/15 text-rose-600 dark:text-rose-300';
+    if (minutes >= 15)
+        return 'bg-amber-500/15 text-amber-600 dark:text-amber-300';
+
+    return 'bg-muted text-muted-foreground';
+}
+
+function nextStatus(order: OrderDetails): OrderStatus | null {
+    if (order.status === 'novo') return 'em_preparo';
+    if (order.status === 'em_preparo') return 'pronto';
+    if (order.status === 'pronto') return 'finalizado';
+
+    return null;
+}
+
+function advanceLabel(order: OrderDetails): string {
+    if (order.status === 'novo') return 'Iniciar preparo';
+    if (order.status === 'em_preparo') return 'Marcar pronto';
+
+    return 'Finalizar pedido';
+}
+
+function advance(order: OrderDetails): void {
+    const status = nextStatus(order);
+
+    if (!status || advanceForm.processing) return;
+
     advancingOrderId.value = order.id;
     advanceError.value = '';
-    advanceForm.status = order.nextStatus;
+    advanceForm.status = status;
     advanceForm.patch(advanceOrder(order.id).url, {
-        onSuccess: () => router.reload({ only: ['orders', 'statusCounts'] }),
+        onSuccess: () => refreshBoard(true),
         onError: (errors) => {
             advanceError.value = String(
                 errors.status ?? 'Não foi possível atualizar o pedido.',
@@ -171,387 +176,266 @@ function advance(order: OrderDetails): void {
     });
 }
 
-defineOptions({
-    layout: () => ({ breadcrumbs: [], showCreateOrder: true }),
-});
+function canAdvance(order: OrderDetails): boolean {
+    return !(
+        (order.status === 'em_preparo' || order.status === 'pronto') &&
+        order.modality === 'entrega' &&
+        !order.courier
+    );
+}
+
+function columnIcon(status: KitchenStatus) {
+    return status === 'novo'
+        ? UtensilsCrossed
+        : status === 'em_preparo'
+          ? CookingPot
+          : PackageCheck;
+}
+
+defineOptions({ layout: () => ({ breadcrumbs: [] }) });
 </script>
 
 <template>
     <Head title="Pedidos" />
 
     <OrderDetailsDialog :order="selectedOrder" @close="selectedOrder = null" />
-    <CourierManagerDialog
-        v-model:open="courierManagerOpen"
-        :couriers="couriers"
-    />
     <DispatchOrderDialog
         :order="dispatchingOrder"
         :couriers="couriers"
+        :reload-only="['columns', 'counts', 'couriers', 'refreshedAt']"
         @close="dispatchingOrder = null"
     />
 
     <div
-        class="mx-auto flex w-full max-w-[1600px] flex-col gap-6 p-4 sm:p-6 xl:p-8"
+        class="mx-auto flex w-full max-w-[1800px] flex-col gap-5 p-4 sm:p-6 xl:p-8"
     >
         <header class="flex flex-wrap items-end justify-between gap-4">
-            <div class="space-y-1">
-                <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
-                    Pedidos
-                </h1>
-                <p class="text-sm text-muted-foreground">
-                    Acompanhe os pedidos e avance cada um pela cozinha até a
-                    finalização.
+            <div>
+                <div class="flex items-center gap-2">
+                    <ClipboardList class="size-7 text-primary" />
+                    <h1
+                        class="text-2xl font-semibold tracking-tight sm:text-3xl"
+                    >
+                        Pedidos
+                    </h1>
+                </div>
+                <p class="mt-1 text-sm text-muted-foreground">
+                    {{ activeOrderCount }} pedidos ativos · atualização
+                    automática a cada 15 segundos · atualizado às
+                    {{ refreshedTime }}
                 </p>
             </div>
-            <Button
-                type="button"
-                variant="outline"
-                class="gap-2 rounded-xl"
-                @click="courierManagerOpen = true"
-            >
-                <Bike class="size-4" />
-                Motoboys
-            </Button>
+            <div class="flex flex-wrap gap-2">
+                <Button as-child variant="outline" class="gap-2 rounded-xl">
+                    <Link :href="historyUrl">
+                        <ScrollText class="size-4" />
+                        Histórico e busca
+                    </Link>
+                </Button>
+                <Button
+                    type="button"
+                    variant="outline"
+                    class="gap-2 rounded-xl"
+                    :disabled="refreshing"
+                    @click="refreshBoard"
+                >
+                    <RefreshCw
+                        class="size-4"
+                        :class="{ 'animate-spin': refreshing }"
+                    />
+                    Atualizar agora
+                </Button>
+            </div>
         </header>
 
-        <section
-            class="rounded-2xl border bg-card text-card-foreground shadow-sm"
+        <p
+            v-if="advanceError"
+            role="alert"
+            class="rounded-xl bg-destructive/10 p-3 text-sm text-destructive"
         >
-            <div class="space-y-4 border-b p-4 sm:p-5">
-                <nav
-                    aria-label="Filtrar pedidos por etapa"
-                    class="flex gap-2 overflow-x-auto pb-1"
-                >
-                    <button
-                        v-for="tab in statusTabs"
-                        :key="tab.value"
-                        type="button"
-                        class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-xl border px-3 text-sm font-medium transition-colors"
-                        :class="
-                            filters.status === tab.value
-                                ? 'border-primary/30 bg-primary/10 text-primary'
-                                : 'border-transparent text-muted-foreground hover:bg-muted hover:text-foreground'
-                        "
-                        :aria-pressed="filters.status === tab.value"
-                        @click="
-                            visitOrders(
-                                tab.value,
-                                searchTerm,
-                                1,
-                                tab.value === 'finalizado'
-                                    ? 'today'
-                                    : filters.period,
-                            )
-                        "
-                    >
-                        {{ tab.label }}
-                        <span
-                            class="rounded-full bg-background/70 px-2 py-0.5 text-xs tabular-nums"
-                        >
-                            {{ statusCounts[tab.value] }}
-                        </span>
-                    </button>
-                </nav>
+            {{ advanceError }}
+        </p>
 
-                <div v-if="filters.status === 'finalizado'" class="space-y-3">
-                    <p class="text-sm font-medium">Data de finalização</p>
-                    <div class="flex flex-wrap gap-2">
-                        <Button
-                            v-for="period in periodTabs"
-                            :key="period.value"
-                            type="button"
-                            size="sm"
-                            :variant="
-                                filters.period === period.value
-                                    ? 'default'
-                                    : 'outline'
-                            "
-                            @click="
-                                visitOrders(
-                                    'finalizado',
-                                    searchTerm,
-                                    1,
-                                    period.value,
-                                )
-                            "
-                        >
-                            {{ period.label }}
-                        </Button>
-                    </div>
-                    <form
-                        class="flex flex-wrap items-end gap-2"
-                        @submit.prevent="
-                            visitOrders('finalizado', searchTerm, 1, 'custom')
-                        "
-                    >
-                        <label class="grid gap-1 text-xs text-muted-foreground">
-                            De
-                            <input
-                                v-model="dateFrom"
-                                type="date"
-                                :max="dateTo || undefined"
-                                class="h-9 rounded-lg border border-input bg-background px-3 text-sm text-foreground"
-                            />
-                        </label>
-                        <label class="grid gap-1 text-xs text-muted-foreground">
-                            Até
-                            <input
-                                v-model="dateTo"
-                                type="date"
-                                :min="dateFrom || undefined"
-                                class="h-9 rounded-lg border border-input bg-background px-3 text-sm text-foreground"
-                            />
-                        </label>
-                        <Button type="submit" size="sm" variant="outline">
-                            Aplicar datas
-                        </Button>
-                    </form>
-                </div>
-
-                <form
-                    class="flex flex-wrap gap-2"
-                    role="search"
-                    @submit.prevent="visitOrders(filters.status, searchTerm)"
-                >
-                    <div class="relative min-w-52 flex-1 sm:max-w-md">
-                        <Search
-                            class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-                        />
-                        <input
-                            v-model="searchTerm"
-                            type="search"
-                            aria-label="Buscar pedido"
-                            placeholder="Número, nome ou telefone"
-                            class="h-10 w-full rounded-xl border border-input bg-background pr-3 pl-9 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-                        />
-                    </div>
-                    <Button type="submit" variant="outline" class="rounded-xl"
-                        >Buscar</Button
-                    >
-                    <Button
-                        v-if="filters.q"
-                        type="button"
-                        variant="ghost"
-                        class="rounded-xl"
-                        @click="
-                            searchTerm = '';
-                            visitOrders(filters.status, '');
-                        "
-                    >
-                        Limpar
-                    </Button>
-                </form>
-            </div>
-
-            <p
-                v-if="advanceError"
-                role="alert"
-                class="mx-4 mt-4 rounded-xl bg-destructive/10 p-3 text-sm text-destructive sm:mx-5"
+        <main class="grid items-start gap-4 xl:grid-cols-3">
+            <section
+                v-for="column in columnDefinitions"
+                :key="column.status"
+                class="overflow-hidden rounded-2xl border bg-card shadow-sm"
             >
-                {{ advanceError }}
-            </p>
-
-            <div
-                v-if="orders.data.length"
-                class="grid gap-3 p-4 sm:p-5 lg:grid-cols-2"
-            >
-                <article
-                    v-for="order in orders.data"
-                    :key="order.id"
-                    class="flex flex-col gap-4 rounded-xl border bg-background/40 p-4 transition-colors hover:border-primary/30"
+                <header
+                    class="flex items-center justify-between gap-3 border-b p-4"
                 >
-                    <div class="flex items-start justify-between gap-3">
-                        <button
-                            type="button"
-                            class="min-w-0 text-left focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
-                            :aria-label="`Ver detalhes do pedido número ${order.id}`"
-                            @click="selectedOrder = order"
-                        >
-                            <span class="flex items-center gap-2 font-semibold">
-                                <ClipboardList class="size-4 text-primary" />
-                                Pedido #{{ order.id }}
-                            </span>
-                            <span
-                                class="mt-1 block text-sm text-muted-foreground"
-                            >
-                                {{
-                                    order.customerName ||
-                                    'Cliente não informado'
-                                }}
-                                · {{ order.modalityLabel }}
-                            </span>
-                        </button>
+                    <div class="flex min-w-0 items-center gap-3">
                         <span
-                            class="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium"
-                            :class="statusClasses[order.status]"
+                            class="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"
                         >
-                            {{ order.statusLabel }}
+                            <component
+                                :is="columnIcon(column.status)"
+                                class="size-5"
+                            />
                         </span>
-                    </div>
-
-                    <div
-                        v-if="order.courier"
-                        class="flex items-center gap-2 rounded-lg bg-primary/5 px-3 py-2 text-sm"
-                    >
-                        <Bike class="size-4 text-primary" />
-                        <span>
-                            Motoboy:
-                            <strong>{{ order.courier.name }}</strong>
-                        </span>
-                    </div>
-
-                    <div
-                        class="flex flex-wrap items-center justify-between gap-2 text-sm"
-                    >
-                        <span class="text-muted-foreground">
-                            {{
-                                formatOrderDate(
-                                    order.status === 'finalizado'
-                                        ? order.finalizedAt
-                                        : order.createdAt,
-                                )
-                            }}
-                            ·
-                            {{ order.items.length }}
-                            {{ order.items.length === 1 ? 'item' : 'itens' }}
-                        </span>
-                        <span class="font-semibold tabular-nums">{{
-                            currency.format(Number(order.total))
-                        }}</span>
-                    </div>
-
-                    <div
-                        class="flex items-center justify-between gap-2 border-t pt-3"
-                    >
-                        <button
-                            type="button"
-                            class="text-sm font-medium text-primary hover:underline"
-                            @click="selectedOrder = order"
-                        >
-                            Ver detalhes
-                        </button>
-                        <div class="flex flex-wrap justify-end gap-2">
-                            <Button
-                                v-if="
-                                    (order.status === 'em_preparo' ||
-                                        order.status === 'pronto') &&
-                                    order.modality === 'entrega'
-                                "
-                                type="button"
-                                size="sm"
-                                :variant="order.courier ? 'outline' : 'default'"
-                                class="gap-2 rounded-lg"
-                                @click="dispatchingOrder = order"
-                            >
-                                <Bike class="size-4" />
-                                {{
-                                    order.courier
-                                        ? 'Trocar motoboy'
-                                        : 'Selecionar motoboy'
-                                }}
-                            </Button>
-                            <Button
-                                v-if="
-                                    order.nextStatus &&
-                                    (order.status === 'novo' ||
-                                        order.modality !== 'entrega' ||
-                                        order.courier)
-                                "
-                                type="button"
-                                size="sm"
-                                class="gap-2 rounded-lg"
-                                :disabled="advanceForm.processing"
-                                @click="advance(order)"
-                            >
-                                {{
-                                    advancingOrderId === order.id
-                                        ? 'Atualizando...'
-                                        : nextStatusLabels[order.status]
-                                }}
-                                <ArrowRight
-                                    v-if="advancingOrderId !== order.id"
-                                    class="size-4"
-                                />
-                            </Button>
-                            <span
-                                v-if="!order.nextStatus"
-                                class="self-center text-xs text-muted-foreground"
-                                >Concluído</span
-                            >
+                        <div>
+                            <h2 class="font-semibold">{{ column.title }}</h2>
+                            <p class="text-xs text-muted-foreground">
+                                {{ column.description }}
+                            </p>
                         </div>
                     </div>
-                </article>
-            </div>
-
-            <div
-                v-else
-                class="flex min-h-72 flex-col items-center justify-center p-8 text-center"
-            >
-                <span
-                    class="grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary"
-                >
-                    <PackageOpen class="size-6" />
-                </span>
-                <h2 class="mt-4 font-semibold">Nenhum pedido encontrado</h2>
-                <p class="mt-1 max-w-sm text-sm text-muted-foreground">
-                    {{
-                        filters.q
-                            ? 'Tente outro número, nome ou telefone.'
-                            : filters.status === 'finalizado'
-                              ? 'Escolha outro período para consultar os pedidos finalizados.'
-                              : 'Os pedidos desta etapa aparecerão aqui.'
-                    }}
-                </p>
-                <Link
-                    v-if="statusCounts.todos === 0"
-                    :href="createUrl"
-                    class="mt-4 text-sm font-medium text-primary hover:underline"
-                >
-                    Criar primeiro pedido
-                </Link>
-            </div>
-
-            <footer
-                v-if="orders.lastPage > 1"
-                class="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3 text-sm sm:px-5"
-            >
-                <span class="text-muted-foreground">
-                    Página {{ orders.currentPage }} de {{ orders.lastPage }} ·
-                    {{ orders.total }} pedidos
-                </span>
-                <div class="flex gap-2">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        :disabled="orders.currentPage <= 1"
-                        @click="
-                            visitOrders(
-                                filters.status,
-                                filters.q,
-                                orders.currentPage - 1,
-                            )
-                        "
+                    <span
+                        class="rounded-full bg-muted px-2.5 py-1 text-sm font-semibold tabular-nums"
                     >
-                        Anterior
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        :disabled="orders.currentPage >= orders.lastPage"
-                        @click="
-                            visitOrders(
-                                filters.status,
-                                filters.q,
-                                orders.currentPage + 1,
-                            )
-                        "
+                        {{ counts[column.status] }}
+                    </span>
+                </header>
+
+                <div
+                    class="max-h-[calc(100vh-14rem)] space-y-3 overflow-y-auto p-3"
+                >
+                    <article
+                        v-for="order in columns[column.status]"
+                        :key="order.id"
+                        class="rounded-xl border bg-background p-4"
                     >
-                        Próxima
-                    </Button>
+                        <div class="flex items-start justify-between gap-3">
+                            <button
+                                type="button"
+                                class="text-left focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+                                @click="selectedOrder = order"
+                            >
+                                <span class="text-lg font-semibold">
+                                    Pedido #{{ order.id }}
+                                </span>
+                                <span
+                                    class="mt-0.5 block text-sm text-muted-foreground"
+                                >
+                                    {{ order.modalityLabel }}
+                                    <template v-if="order.customerName">
+                                        · {{ order.customerName }}
+                                    </template>
+                                </span>
+                            </button>
+                            <span
+                                class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-xs font-medium"
+                                :class="waitingClass(order)"
+                            >
+                                <Clock3 class="size-3.5" />
+                                {{ waitingTime(order.createdAt) }}
+                            </span>
+                        </div>
+
+                        <div class="my-4 space-y-2 border-y py-3">
+                            <div
+                                v-for="item in order.items"
+                                :key="item.id"
+                                class="flex items-start gap-2 text-sm"
+                            >
+                                <span
+                                    class="grid size-6 shrink-0 place-items-center rounded-md bg-primary/10 font-semibold text-primary"
+                                >
+                                    {{ item.quantity }}
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="font-medium">
+                                        {{ item.productName }}
+                                    </p>
+                                    <p
+                                        v-if="item.selectedOptions.length"
+                                        class="text-xs text-muted-foreground"
+                                    >
+                                        {{
+                                            item.selectedOptions
+                                                .map((option) => option.name)
+                                                .join(', ')
+                                        }}
+                                    </p>
+                                    <p
+                                        v-if="item.notes"
+                                        class="mt-1 rounded-md bg-amber-500/10 px-2 py-1 text-xs font-medium text-amber-700 dark:text-amber-300"
+                                    >
+                                        Obs.: {{ item.notes }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div
+                            v-if="order.courier"
+                            class="mb-3 flex items-center gap-2 text-xs text-muted-foreground"
+                        >
+                            <Bike class="size-4 text-primary" />
+                            Entrega com {{ order.courier.name }}
+                        </div>
+
+                        <div class="flex flex-wrap justify-between gap-2">
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                @click="selectedOrder = order"
+                            >
+                                Ver detalhes
+                            </Button>
+
+                            <div class="flex flex-wrap justify-end gap-2">
+                                <Button
+                                    v-if="
+                                        order.status === 'em_preparo' &&
+                                        order.modality === 'entrega'
+                                    "
+                                    type="button"
+                                    size="sm"
+                                    :variant="
+                                        order.courier ? 'outline' : 'default'
+                                    "
+                                    class="gap-1.5"
+                                    @click="dispatchingOrder = order"
+                                >
+                                    <Bike class="size-4" />
+                                    {{ order.courier ? 'Trocar' : 'Motoboy' }}
+                                </Button>
+                                <Button
+                                    v-if="nextStatus(order)"
+                                    type="button"
+                                    size="sm"
+                                    class="gap-1.5"
+                                    :disabled="
+                                        advanceForm.processing ||
+                                        !canAdvance(order)
+                                    "
+                                    @click="advance(order)"
+                                >
+                                    {{
+                                        advancingOrderId === order.id
+                                            ? 'Atualizando...'
+                                            : advanceLabel(order)
+                                    }}
+                                    <ArrowRight
+                                        v-if="advancingOrderId !== order.id"
+                                        class="size-4"
+                                    />
+                                </Button>
+                            </div>
+                        </div>
+                    </article>
+
+                    <div
+                        v-if="!columns[column.status].length"
+                        class="grid min-h-40 place-items-center rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground"
+                    >
+                        {{ column.emptyMessage }}
+                    </div>
+
+                    <p
+                        v-if="
+                            counts[column.status] >
+                            columns[column.status].length
+                        "
+                        class="py-2 text-center text-xs text-muted-foreground"
+                    >
+                        Exibindo os 50 pedidos mais antigos desta etapa.
+                    </p>
                 </div>
-            </footer>
-        </section>
+            </section>
+        </main>
     </div>
 </template>

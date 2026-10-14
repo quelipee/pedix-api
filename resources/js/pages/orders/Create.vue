@@ -45,6 +45,21 @@ type DeliveryAddress = {
     state: string;
 };
 
+type CustomerOption = {
+    id: number;
+    name: string;
+    phone: string;
+    address: {
+        postalCode: string;
+        street: string;
+        number: string;
+        complement: string | null;
+        neighborhood: string;
+        city: string;
+        state: string;
+    } | null;
+};
+
 function emptyDeliveryAddress(): DeliveryAddress {
     return {
         postal_code: '',
@@ -66,6 +81,7 @@ type OrderItemInput = {
 
 const props = defineProps<{
     products: Product[];
+    customers: CustomerOption[];
     modalities: { value: OrderModality; label: string }[];
     paymentMethods: { value: PaymentMethod; label: string }[];
 }>();
@@ -83,6 +99,7 @@ const dashboardUrl = computed(() =>
 const form = useHttp<
     {
         modality: OrderModality;
+        customer_id: number | null;
         customer_name: string;
         customer_phone: string;
         payment_method: PaymentMethod;
@@ -95,6 +112,7 @@ const form = useHttp<
     { data: { id: number } }
 >(storeOrder(), {
     modality: 'local',
+    customer_id: null,
     customer_name: '',
     customer_phone: '',
     payment_method: 'dinheiro',
@@ -205,6 +223,27 @@ const currency = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
 });
+
+function applySelectedCustomer(): void {
+    const customer = props.customers.find(({ id }) => id === form.customer_id);
+
+    if (!customer) return;
+
+    form.customer_name = customer.name;
+    form.customer_phone = customer.phone;
+
+    if (customer.address) {
+        form.delivery_address = {
+            postal_code: customer.address.postalCode,
+            street: customer.address.street,
+            number: customer.address.number,
+            complement: customer.address.complement ?? '',
+            neighborhood: customer.address.neighborhood,
+            city: customer.address.city,
+            state: customer.address.state,
+        };
+    }
+}
 
 function updateChangeFor(event: Event): void {
     changeForDisplay.value = (event.target as HTMLInputElement).value;
@@ -732,7 +771,40 @@ defineOptions({
                             Identificação e modalidade
                         </h2>
                         <p class="mt-1 text-sm text-muted-foreground">
-                            Dados opcionais para identificar o cliente.
+                            O telefone identifica ou cadastra o cliente
+                            automaticamente. Ele pode ficar vazio em pedidos de
+                            consumo.
+                        </p>
+                    </div>
+
+                    <div v-if="customers.length" class="grid gap-2">
+                        <Label for="order-customer">Cliente cadastrado</Label>
+                        <select
+                            id="order-customer"
+                            v-model="form.customer_id"
+                            class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                            @change="applySelectedCustomer"
+                        >
+                            <option :value="null">
+                                Cliente não cadastrado
+                            </option>
+                            <option
+                                v-for="customer in customers"
+                                :key="customer.id"
+                                :value="customer.id"
+                            >
+                                {{ customer.name }} · {{ customer.phone }}
+                            </option>
+                        </select>
+                        <p class="text-xs text-muted-foreground">
+                            Ao selecionar, nome, telefone e endereço são
+                            preenchidos automaticamente.
+                        </p>
+                        <p
+                            v-if="form.errors.customer_id"
+                            class="text-sm text-destructive"
+                        >
+                            {{ form.errors.customer_id }}
                         </p>
                     </div>
 

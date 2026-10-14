@@ -4,8 +4,13 @@ use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\CashRegisters\CashRegisterController;
 use App\Http\Controllers\CashRegisters\CashRegisterPageController;
 use App\Http\Controllers\Couriers\CourierController;
+use App\Http\Controllers\Customers\CreateCustomerPageController;
+use App\Http\Controllers\Customers\CustomerController;
+use App\Http\Controllers\Customers\CustomerDetailsController;
+use App\Http\Controllers\Customers\CustomerListController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Orders\CreateOrderPageController;
+use App\Http\Controllers\Orders\KitchenPanelController;
 use App\Http\Controllers\Orders\OrderController;
 use App\Http\Controllers\Orders\OrderManagementController;
 use App\Http\Controllers\Products\CreateProductPageController;
@@ -29,12 +34,16 @@ Route::prefix('{current_team}')
     ]))
     ->group(function () {
         Route::get('dashboard', DashboardController::class)->name('dashboard');
-        Route::get('orders', OrderManagementController::class)->name('orders.manage');
+        Route::get('orders', KitchenPanelController::class)->name('orders.manage');
+        Route::get('orders/history', OrderManagementController::class)->name('orders.history');
         Route::get('orders/create', CreateOrderPageController::class)->name('orders.create');
         Route::get('products', ProductCatalogController::class)->name('products.catalog');
         Route::get('products/create', CreateProductPageController::class)->name('products.create');
         Route::get('products/{product}/edit', EditProductPageController::class)->name('products.edit');
         Route::get('cash-register', CashRegisterPageController::class)->name('cash-registers.index');
+        Route::get('customers', CustomerListController::class)->name('customers.index');
+        Route::get('customers/create', CreateCustomerPageController::class)->name('customers.create');
+        Route::get('customers/{customer}', CustomerDetailsController::class)->name('customers.show');
     });
 
 Route::middleware(['auth'])->group(function () {
@@ -48,6 +57,7 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('orders/{order}/advance', [OrderController::class, 'advance'])->name('orders.advance');
         Route::patch('orders/{order}/dispatch', [OrderController::class, 'dispatch'])->name('orders.dispatch');
         Route::post('couriers', [CourierController::class, 'store'])->name('couriers.store');
+        Route::post('customers', [CustomerController::class, 'store'])->name('customers.store');
         Route::patch('couriers/{courier}/availability', [CourierController::class, 'updateAvailability'])->name('couriers.availability');
         Route::post('cash-registers/open', [CashRegisterController::class, 'open'])->name('cash-registers.open');
         Route::post('cash-registers/{cashRegister}/movements', [CashRegisterController::class, 'movement'])->name('cash-registers.movements.store');

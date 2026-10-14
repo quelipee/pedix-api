@@ -6,6 +6,7 @@ import {
     Landmark,
     LayoutGrid,
     ShoppingBag,
+    Users,
 } from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
@@ -23,6 +24,7 @@ import UserMenuContent from '@/components/UserMenuContent.vue';
 import { getInitials } from '@/composables/useInitials';
 import { dashboard } from '@/routes';
 import { index as cashRegisterIndex } from '@/routes/cash-registers';
+import { index as customersIndex } from '@/routes/customers';
 import { manage as manageOrders } from '@/routes/orders';
 import { catalog as productCatalog } from '@/routes/products';
 import type { BreadcrumbItem } from '@/types';
@@ -56,6 +58,11 @@ const productsUrl = computed(() =>
 const cashRegisterUrl = computed(() =>
     page.props.currentTeam
         ? cashRegisterIndex(page.props.currentTeam.slug).url
+        : '/',
+);
+const customersUrl = computed(() =>
+    page.props.currentTeam
+        ? customersIndex(page.props.currentTeam.slug).url
         : '/',
 );
 const hasMultipleTeams = computed(() => (page.props.teams ?? []).length > 1);
@@ -109,7 +116,8 @@ const firstName = computed(() => user.value.name.split(' ')[0]);
                     aria-label="Gerenciar pedidos"
                     class="inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-medium transition-colors"
                     :class="
-                        page.url.split('?')[0] === ordersUrl
+                        page.url.split('?')[0] === ordersUrl ||
+                        page.url.split('?')[0].startsWith(`${ordersUrl}/`)
                             ? 'bg-primary/10 text-primary'
                             : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                     "
@@ -130,6 +138,20 @@ const firstName = computed(() => user.value.name.split(' ')[0]);
                 >
                     <ShoppingBag class="size-4" />
                     <span class="hidden sm:inline">Cardápio</span>
+                </Link>
+                <Link
+                    :href="customersUrl"
+                    aria-label="Clientes"
+                    class="inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-medium transition-colors"
+                    :class="
+                        page.url.split('?')[0] === customersUrl ||
+                        page.url.split('?')[0].startsWith(`${customersUrl}/`)
+                            ? 'bg-primary/10 text-primary'
+                            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                    "
+                >
+                    <Users class="size-4" />
+                    <span class="hidden lg:inline">Clientes</span>
                 </Link>
                 <Link
                     :href="cashRegisterUrl"

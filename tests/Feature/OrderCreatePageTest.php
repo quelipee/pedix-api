@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Customer;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -22,6 +23,7 @@ class OrderCreatePageTest extends TestCase
             'ingredients' => ['Pão', 'Hambúrguer', 'Bacon'],
         ]);
         Product::factory()->inactive()->create();
+        $customer = Customer::factory()->create(['team_id' => $user->current_team_id]);
 
         $response = $this->actingAs($user)->get(route('orders.create'));
 
@@ -34,8 +36,9 @@ class OrderCreatePageTest extends TestCase
             ->where('products.0.description', 'Hambúrguer com bacon crocante.')
             ->where('products.0.ingredients.2', 'Bacon')
             ->has('modalities', 3)
-            ->has('paymentMethods', 4),
-        );
+            ->has('paymentMethods', 4)
+            ->has('customers', 1)
+            ->where('customers.0.id', $customer->id));
     }
 
     public function test_order_creation_page_labels_dine_in_as_consumo(): void

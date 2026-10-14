@@ -15,7 +15,7 @@ class OrderManagementPageTest extends TestCase
 
     public function test_guests_cannot_open_the_order_management_page(): void
     {
-        $this->get(route('orders.manage', ['current_team' => 'lanchonete']))
+        $this->get(route('orders.history', ['current_team' => 'lanchonete']))
             ->assertRedirect(route('login'));
     }
 
@@ -37,10 +37,10 @@ class OrderManagementPageTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->get(route('orders.manage'))
+            ->get(route('orders.history'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->component('orders/Index')
+                ->component('orders/History')
                 ->where('filters.status', 'todos')
                 ->where('statusCounts.todos', 2)
                 ->where('statusCounts.novo', 1)
@@ -69,7 +69,7 @@ class OrderManagementPageTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->get(route('orders.manage', ['status' => 'pronto', 'q' => 'Ana']))
+            ->get(route('orders.history', ['status' => 'pronto', 'q' => 'Ana']))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->where('filters.status', 'pronto')
@@ -78,14 +78,14 @@ class OrderManagementPageTest extends TestCase
                 ->where('orders.data.0.id', $readyOrder->id),
             );
 
-        $this->get(route('orders.manage', ['q' => (string) $readyOrder->id]))
+        $this->get(route('orders.history', ['q' => (string) $readyOrder->id]))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->has('orders.data', 1)
                 ->where('orders.data.0.id', $readyOrder->id),
             );
 
-        $this->get(route('orders.manage', ['q' => '99999-0000']))
+        $this->get(route('orders.history', ['q' => '99999-0000']))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->has('orders.data', 1)
@@ -99,7 +99,7 @@ class OrderManagementPageTest extends TestCase
         Order::factory()->count(13)->create();
 
         $this->actingAs($user)
-            ->get(route('orders.manage', ['page' => 2]))
+            ->get(route('orders.history', ['page' => 2]))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->has('orders.data', 1)
@@ -126,7 +126,7 @@ class OrderManagementPageTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->get(route('orders.manage', ['status' => 'finalizado']))
+            ->get(route('orders.history', ['status' => 'finalizado']))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->where('filters.period', 'today')
@@ -136,20 +136,20 @@ class OrderManagementPageTest extends TestCase
                 ->where('statusCounts.finalizado', 18),
             );
 
-        $this->get(route('orders.manage', ['status' => 'finalizado', 'page' => 2]))
+        $this->get(route('orders.history', ['status' => 'finalizado', 'page' => 2]))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->where('orders.currentPage', 2)
                 ->has('orders.data', 3),
             );
 
-        $this->get(route('orders.manage', ['status' => 'finalizado', 'period' => '7d']))
+        $this->get(route('orders.history', ['status' => 'finalizado', 'period' => '7d']))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->where('orders.total', 17),
             );
 
-        $this->get(route('orders.manage', [
+        $this->get(route('orders.history', [
             'status' => 'finalizado',
             'period' => 'custom',
             'date_from' => now()->subDays(3)->toDateString(),
@@ -160,7 +160,7 @@ class OrderManagementPageTest extends TestCase
                 ->has('orders.data', 2),
             );
 
-        $this->get(route('orders.manage', ['status' => 'finalizado', 'period' => 'all']))
+        $this->get(route('orders.history', ['status' => 'finalizado', 'period' => 'all']))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->where('orders.total', 18),
