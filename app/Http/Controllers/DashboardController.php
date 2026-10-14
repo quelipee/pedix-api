@@ -33,7 +33,7 @@ class DashboardController extends Controller
             ]);
 
         $recentOrders = Order::query()
-            ->with(['items', 'courier'])
+            ->with(['items', 'courier', 'cancelledBy'])
             ->latest('created_at')
             ->limit(5)
             ->get(['id', 'customer_name', 'customer_phone', 'payment_method', 'change_for', 'delivery_address', 'delivery_fee', 'courier_id', 'dispatched_at', 'modality', 'status', 'created_at'])

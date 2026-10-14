@@ -13,6 +13,7 @@ type Props = {
 
 withDefaults(defineProps<Props>(), {
     breadcrumbs: () => [],
+    showCreateOrder: true,
 });
 </script>
 

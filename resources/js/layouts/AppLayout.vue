@@ -2,7 +2,7 @@
 import AppLayout from '@/layouts/app/AppHeaderLayout.vue';
 import type { BreadcrumbItem } from '@/types';
 
-const { breadcrumbs = [] } = defineProps<{
+const { breadcrumbs = [], showCreateOrder = true } = defineProps<{
     breadcrumbs?: BreadcrumbItem[];
     products?: { id: number; name: string; price: string }[];
     showCreateOrder?: boolean;

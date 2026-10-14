@@ -24,6 +24,8 @@ const statusClasses: Record<OrderStatus, string> = {
         'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300',
     pronto: 'bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300',
     finalizado: 'bg-muted text-muted-foreground',
+    cancelado:
+        'bg-rose-500/15 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300',
 };
 
 function handleOpenChange(open: boolean): void {
@@ -62,6 +64,23 @@ function formatOrderDate(value: string | null): string {
             </DialogHeader>
 
             <div v-if="order" class="space-y-5">
+                <div
+                    v-if="order.status === 'cancelado'"
+                    class="rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm"
+                >
+                    <p class="font-semibold text-rose-700 dark:text-rose-300">
+                        Pedido cancelado
+                    </p>
+                    <p class="mt-1 text-muted-foreground">
+                        {{ order.cancellationReason || 'Motivo não informado.' }}
+                    </p>
+                    <p v-if="order.cancelledBy" class="mt-2 text-xs text-muted-foreground">
+                        Cancelado por {{ order.cancelledBy.name }}
+                        <template v-if="order.cancelledAt">
+                            · {{ formatOrderDate(order.cancelledAt) }}
+                        </template>
+                    </p>
+                </div>
                 <div class="grid gap-3 sm:grid-cols-2">
                     <div class="rounded-xl border p-3">
                         <p class="text-xs text-muted-foreground">Cliente</p>

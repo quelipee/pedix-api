@@ -50,6 +50,12 @@ class OrderResource extends JsonResource
             'items' => OrderItemResource::collection($this->whenLoaded('items')),
             'createdAt' => $this->created_at?->toISOString(),
             'finalizedAt' => $this->finalized_at?->toISOString(),
+            'cancelledAt' => $this->cancelled_at?->toISOString(),
+            'cancellationReason' => $this->cancellation_reason,
+            'cancelledBy' => $this->whenLoaded('cancelledBy', fn (): ?array => $this->cancelledBy ? [
+                'id' => $this->cancelledBy->id,
+                'name' => $this->cancelledBy->name,
+            ] : null),
         ];
     }
 }

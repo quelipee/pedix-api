@@ -17,6 +17,7 @@ use App\Http\Controllers\Products\CreateProductPageController;
 use App\Http\Controllers\Products\EditProductPageController;
 use App\Http\Controllers\Products\ProductCatalogController;
 use App\Http\Controllers\Products\ProductController;
+use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Teams\TeamInvitationController;
 use App\Http\Middleware\EnsureTeamMembership;
 use Illuminate\Support\Facades\Route;
@@ -44,6 +45,7 @@ Route::prefix('{current_team}')
         Route::get('customers', CustomerListController::class)->name('customers.index');
         Route::get('customers/create', CreateCustomerPageController::class)->name('customers.create');
         Route::get('customers/{customer}', CustomerDetailsController::class)->name('customers.show');
+        Route::get('reports', ReportController::class)->name('reports.index');
     });
 
 Route::middleware(['auth'])->group(function () {
@@ -56,6 +58,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('orders', [OrderController::class, 'store'])->name('orders.store');
         Route::patch('orders/{order}/advance', [OrderController::class, 'advance'])->name('orders.advance');
         Route::patch('orders/{order}/dispatch', [OrderController::class, 'dispatch'])->name('orders.dispatch');
+        Route::patch('orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
         Route::post('couriers', [CourierController::class, 'store'])->name('couriers.store');
         Route::post('customers', [CustomerController::class, 'store'])->name('customers.store');
         Route::patch('couriers/{courier}/availability', [CourierController::class, 'updateAvailability'])->name('couriers.availability');

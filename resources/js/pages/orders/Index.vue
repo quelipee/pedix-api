@@ -192,7 +192,9 @@ function columnIcon(status: KitchenStatus) {
           : PackageCheck;
 }
 
-defineOptions({ layout: () => ({ breadcrumbs: [] }) });
+defineOptions({
+    layout: () => ({ breadcrumbs: [], showCreateOrder: true }),
+});
 </script>
 
 <template>

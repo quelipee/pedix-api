@@ -50,7 +50,7 @@ class OrderManagementController extends Controller
             ->pluck('total', 'status');
 
         $orders = Order::query()
-            ->with(['items', 'courier'])
+            ->with(['items', 'courier', 'cancelledBy'])
             ->when($status !== 'todos', fn (Builder $query): Builder => $query->where('status', $status))
             ->when($status === OrderStatus::Finalized->value && $dateFrom !== null, fn (Builder $query): Builder => $query->where('finalized_at', '>=', $dateFrom->copy()->startOfDay()))
             ->when($status === OrderStatus::Finalized->value && $dateTo !== null, fn (Builder $query): Builder => $query->where('finalized_at', '<', $dateTo->copy()->addDay()->startOfDay()))
@@ -95,7 +95,7 @@ class OrderManagementController extends Controller
                 ->where('team_id', $request->user()->current_team_id)
                 ->withCount(['orders as active_deliveries_count' => fn (Builder $query): Builder => $query
                     ->whereNotNull('dispatched_at')
-                    ->where('status', '!=', OrderStatus::Finalized)])
+                    ->whereNotIn('status', [OrderStatus::Finalized->value, OrderStatus::Cancelled->value])])
                 ->orderBy('name')
                 ->get()
                 ->map(fn (Courier $courier): array => [

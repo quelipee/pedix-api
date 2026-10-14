@@ -5,6 +5,7 @@ import {
     ClipboardList,
     Landmark,
     LayoutGrid,
+    ChartNoAxesCombined,
     ShoppingBag,
     Users,
 } from '@lucide/vue';
@@ -27,6 +28,7 @@ import { index as cashRegisterIndex } from '@/routes/cash-registers';
 import { index as customersIndex } from '@/routes/customers';
 import { manage as manageOrders } from '@/routes/orders';
 import { catalog as productCatalog } from '@/routes/products';
+import { index as reportsIndex } from '@/routes/reports';
 import type { BreadcrumbItem } from '@/types';
 
 withDefaults(
@@ -37,6 +39,7 @@ withDefaults(
     }>(),
     {
         breadcrumbs: () => [],
+        showCreateOrder: true,
     },
 );
 
@@ -63,6 +66,11 @@ const cashRegisterUrl = computed(() =>
 const customersUrl = computed(() =>
     page.props.currentTeam
         ? customersIndex(page.props.currentTeam.slug).url
+        : '/',
+);
+const reportsUrl = computed(() =>
+    page.props.currentTeam
+        ? reportsIndex(page.props.currentTeam.slug).url
         : '/',
 );
 const hasMultipleTeams = computed(() => (page.props.teams ?? []).length > 1);
@@ -152,6 +160,19 @@ const firstName = computed(() => user.value.name.split(' ')[0]);
                 >
                     <Users class="size-4" />
                     <span class="hidden lg:inline">Clientes</span>
+                </Link>
+                <Link
+                    :href="reportsUrl"
+                    aria-label="Relatórios"
+                    class="inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-medium transition-colors"
+                    :class="
+                        page.url.split('?')[0] === reportsUrl
+                            ? 'bg-primary/10 text-primary'
+                            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                    "
+                >
+                    <ChartNoAxesCombined class="size-4" />
+                    <span class="hidden xl:inline">Relatórios</span>
                 </Link>
                 <Link
                     :href="cashRegisterUrl"

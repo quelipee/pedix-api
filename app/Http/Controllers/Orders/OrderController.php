@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Orders;
 
 use App\Actions\Orders\AdvanceOrderStatus;
+use App\Actions\Orders\CancelOrder;
 use App\Actions\Orders\CreateOrder;
 use App\Actions\Orders\DispatchOrder;
 use App\Enums\OrderModality;
@@ -10,6 +11,7 @@ use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Orders\AdvanceOrderStatusRequest;
+use App\Http\Requests\Orders\CancelOrderRequest;
 use App\Http\Requests\Orders\DispatchOrderRequest;
 use App\Http\Requests\Orders\StoreOrderRequest;
 use App\Http\Resources\OrderResource;
@@ -25,7 +27,7 @@ class OrderController extends Controller
 {
     public function index(): AnonymousResourceCollection
     {
-        $orders = Order::query()->with(['items', 'courier'])->latest('id')->paginate(20);
+        $orders = Order::query()->with(['items', 'courier', 'cancelledBy'])->latest('id')->paginate(20);
 
         return OrderResource::collection($orders)->additional([
             'products' => ProductResource::collection(Product::query()->with('optionGroups.options')->where('active', true)->orderBy('name')->get())->resolve(),
@@ -80,5 +82,15 @@ class OrderController extends Controller
         $dispatchOrder->handle($order, $courier, $teamId);
 
         return OrderResource::make($order->refresh()->load(['items', 'courier']))->response();
+    }
+
+    public function cancel(CancelOrderRequest $request, Order $order, CancelOrder $cancelOrder): JsonResponse
+    {
+        $userId = $request->user()->id;
+        $cancelOrder->handle($order, $userId, $request->validated('reason'));
+
+        return OrderResource::make(
+            $order->refresh()->load(['items', 'courier', 'cancelledBy']),
+        )->response();
     }
 }

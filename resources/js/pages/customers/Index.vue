@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import {
     CalendarClock,
     Phone,
@@ -9,9 +9,10 @@ import {
     Trophy,
     UserRound,
 } from '@lucide/vue';
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import CustomerCreateDialog from '@/components/customers/CustomerCreateDialog.vue';
+import CustomerDetailsDialog from '@/components/customers/CustomerDetailsDialog.vue';
 import {
-    create as createCustomer,
     index as customersIndex,
     show as showCustomer,
 } from '@/routes/customers';
@@ -29,12 +30,12 @@ const props = defineProps<{
 
 const page = usePage();
 const search = ref(props.filters.q);
+const createDialogOpen = ref(false);
+const selectedCustomer = ref<Customer | null>(null);
+let searchTimer: ReturnType<typeof setTimeout> | null = null;
 const currentTeam = computed(() => page.props.currentTeam as Team | null);
 const indexUrl = computed(() =>
     currentTeam.value ? customersIndex(currentTeam.value.slug).url : '/',
-);
-const createUrl = computed(() =>
-    currentTeam.value ? createCustomer(currentTeam.value.slug).url : '/',
 );
 const dateFormatter = new Intl.DateTimeFormat('pt-BR', {
     dateStyle: 'short',
@@ -50,6 +51,15 @@ function customerUrl(customer: Customer): string {
         : '/';
 }
 
+const selectedCustomerUrl = computed(() =>
+    selectedCustomer.value ? customerUrl(selectedCustomer.value) : null,
+);
+
+function customerCreated(): void {
+    createDialogOpen.value = false;
+    router.reload({ only: ['customers'] });
+}
+
 function visit(pageNumber = 1): void {
     router.get(
         indexUrl.value,
@@ -58,11 +68,35 @@ function visit(pageNumber = 1): void {
     );
 }
 
+watch(search, () => {
+    if (searchTimer) {
+        clearTimeout(searchTimer);
+    }
+
+    searchTimer = setTimeout(() => visit(), 300);
+});
+
+onBeforeUnmount(() => {
+    if (searchTimer) {
+        clearTimeout(searchTimer);
+    }
+});
+
 defineOptions({ layout: () => ({ breadcrumbs: [], showCreateOrder: true }) });
 </script>
 
 <template>
     <Head title="Clientes" />
+    <CustomerCreateDialog
+        :open="createDialogOpen"
+        @close="createDialogOpen = false"
+        @created="customerCreated"
+    />
+    <CustomerDetailsDialog
+        :open="selectedCustomer !== null"
+        :url="selectedCustomerUrl"
+        @close="selectedCustomer = null"
+    />
 
     <div
         class="mx-auto flex w-full max-w-[1600px] flex-col gap-6 p-4 sm:p-6 xl:p-8"
@@ -76,19 +110,17 @@ defineOptions({ layout: () => ({ breadcrumbs: [], showCreateOrder: true }) });
                     Cadastre clientes e acompanhe o histórico de compras.
                 </p>
             </div>
-            <Link
-                :href="createUrl"
+            <button
+                type="button"
                 class="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                @click="createDialogOpen = true"
             >
                 <Plus class="size-4" /> Novo cliente
-            </Link>
+            </button>
         </header>
 
         <section class="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
-            <form
-                class="flex flex-col gap-3 sm:flex-row"
-                @submit.prevent="visit()"
-            >
+            <div>
                 <label class="relative flex-1">
                     <Search
                         class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
@@ -97,26 +129,22 @@ defineOptions({ layout: () => ({ breadcrumbs: [], showCreateOrder: true }) });
                         v-model="search"
                         class="h-10 w-full rounded-md border border-input bg-background pr-3 pl-10 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                         placeholder="Buscar por nome ou telefone"
+                        aria-label="Buscar clientes por nome ou telefone"
                     />
                 </label>
-                <button
-                    class="h-10 rounded-md border bg-background px-5 text-sm font-medium hover:bg-accent"
-                    type="submit"
-                >
-                    Buscar
-                </button>
-            </form>
+            </div>
         </section>
 
         <section
             v-if="customers.data.length"
             class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"
         >
-            <Link
+            <button
                 v-for="customer in customers.data"
                 :key="customer.id"
-                :href="customerUrl(customer)"
-                class="group rounded-2xl border bg-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+                type="button"
+                class="group rounded-2xl border bg-card p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+                @click="selectedCustomer = customer"
             >
                 <div class="flex items-start justify-between gap-4">
                     <div class="flex min-w-0 items-center gap-3">
@@ -179,7 +207,7 @@ defineOptions({ layout: () => ({ breadcrumbs: [], showCreateOrder: true }) });
                         </p>
                     </div>
                 </div>
-            </Link>
+            </button>
         </section>
 
         <section

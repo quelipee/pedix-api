@@ -127,6 +127,31 @@ class CustomerManagementTest extends TestCase
                 ->where('orders.data.0.id', $order->id));
     }
 
+    public function test_customer_details_are_available_as_json_for_the_list_modal(): void
+    {
+        $user = User::factory()->create();
+        $customer = Customer::factory()->create(['team_id' => $user->current_team_id]);
+        $order = Order::factory()->create([
+            'customer_id' => $customer->id,
+            'status' => OrderStatus::Finalized,
+            'finalized_at' => now(),
+        ]);
+        $order->items()->create([
+            'product_name' => 'X-Bacon',
+            'unit_price' => '22.00',
+            'quantity' => 2,
+        ]);
+
+        $this->actingAs($user)
+            ->getJson(route('customers.show', $customer))
+            ->assertOk()
+            ->assertJsonPath('customer.id', $customer->id)
+            ->assertJsonPath('summary.finalizedOrdersCount', 1)
+            ->assertJsonPath('summary.totalSpent', '44.00')
+            ->assertJsonPath('summary.popularProduct.name', 'X-Bacon')
+            ->assertJsonPath('orders.data.0.id', $order->id);
+    }
+
     public function test_a_customer_from_another_team_cannot_be_viewed(): void
     {
         $user = User::factory()->create();

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, router, useHttp, usePage } from '@inertiajs/vue3';
 import { ArrowLeft, Minus, Plus, ShoppingBag } from '@lucide/vue';
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { formatMoneyInput, parseMoneyInput } from '@/lib/money';
-import { store as storeOrder } from '@/routes/orders';
+import { manage as manageOrders, store as storeOrder } from '@/routes/orders';
 import { dashboard } from '@/routes';
 import type { Team } from '@/types';
 
@@ -79,6 +79,19 @@ type OrderItemInput = {
     option_ids: number[];
 };
 
+type OrderDraft = {
+    modality: OrderModality;
+    customer_id: number | null;
+    customer_name: string;
+    customer_phone: string;
+    payment_method: PaymentMethod;
+    needs_change: boolean;
+    change_for: string;
+    delivery_address: DeliveryAddress;
+    delivery_fee: string;
+    items: OrderItemInput[];
+};
+
 const props = defineProps<{
     products: Product[];
     customers: CustomerOption[];
@@ -95,22 +108,11 @@ const currentTeam = computed(() => page.props.currentTeam as Team | null);
 const dashboardUrl = computed(() =>
     currentTeam.value ? dashboard(currentTeam.value.slug).url : '/',
 );
+const ordersUrl = computed(() =>
+    currentTeam.value ? manageOrders(currentTeam.value.slug).url : '/',
+);
 
-const form = useHttp<
-    {
-        modality: OrderModality;
-        customer_id: number | null;
-        customer_name: string;
-        customer_phone: string;
-        payment_method: PaymentMethod;
-        needs_change: boolean;
-        change_for: string;
-        delivery_address: DeliveryAddress;
-        delivery_fee: string;
-        items: OrderItemInput[];
-    },
-    { data: { id: number } }
->(storeOrder(), {
+const form = useHttp<OrderDraft, { data: { id: number } }>(storeOrder(), {
     modality: 'local',
     customer_id: null,
     customer_name: '',
@@ -122,6 +124,133 @@ const form = useHttp<
     delivery_fee: '',
     items: [],
 });
+
+function draftStorageKey(): string | null {
+    return currentTeam.value ? `order-draft:${currentTeam.value.slug}` : null;
+}
+
+function restoreDraft(): void {
+    const storageKey = draftStorageKey();
+
+    if (!storageKey) return;
+
+    try {
+        const draft = JSON.parse(
+            localStorage.getItem(storageKey) ?? 'null',
+        ) as Partial<OrderDraft> | null;
+
+        if (!draft || typeof draft !== 'object') return;
+
+        if (
+            draft.modality &&
+            ['local', 'retirada', 'entrega'].includes(draft.modality)
+        ) {
+            form.modality = draft.modality;
+        }
+
+        if (
+            draft.payment_method &&
+            ['dinheiro', 'pix', 'debito', 'credito'].includes(
+                draft.payment_method,
+            )
+        ) {
+            form.payment_method = draft.payment_method;
+        }
+
+        form.customer_id =
+            typeof draft.customer_id === 'number' ? draft.customer_id : null;
+        form.customer_name =
+            typeof draft.customer_name === 'string' ? draft.customer_name : '';
+        form.customer_phone =
+            typeof draft.customer_phone === 'string'
+                ? draft.customer_phone
+                : '';
+        form.needs_change = draft.needs_change === true;
+        form.change_for =
+            typeof draft.change_for === 'string' ? draft.change_for : '';
+        form.delivery_fee =
+            typeof draft.delivery_fee === 'string' ? draft.delivery_fee : '';
+
+        if (draft.delivery_address) {
+            form.delivery_address = Object.fromEntries(
+                Object.keys(emptyDeliveryAddress()).map((field) => [
+                    field,
+                    typeof draft.delivery_address?.[
+                        field as keyof DeliveryAddress
+                    ] === 'string'
+                        ? draft.delivery_address[field as keyof DeliveryAddress]
+                        : '',
+                ]),
+            ) as DeliveryAddress;
+        }
+
+        if (Array.isArray(draft.items)) {
+            form.items = draft.items.flatMap((item) => {
+                const product = props.products.find(
+                    ({ id }) => id === item.product_id,
+                );
+
+                if (!product || !Number.isInteger(item.quantity)) return [];
+
+                const availableOptionIds = new Set(
+                    product.optionGroups.flatMap((group) =>
+                        group.options
+                            .filter(({ active }) => active)
+                            .map(({ id }) => id),
+                    ),
+                );
+
+                return [
+                    {
+                        product_id: product.id,
+                        quantity: Math.max(1, item.quantity),
+                        notes: typeof item.notes === 'string' ? item.notes : '',
+                        option_ids: Array.isArray(item.option_ids)
+                            ? item.option_ids.filter((id) =>
+                                  availableOptionIds.has(id),
+                              )
+                            : [],
+                    },
+                ];
+            });
+        }
+
+        changeForDisplay.value =
+            formatMoneyInput(form.change_for)?.display ?? form.change_for;
+        deliveryFeeDisplay.value =
+            formatMoneyInput(form.delivery_fee)?.display ?? form.delivery_fee;
+    } catch {
+        localStorage.removeItem(storageKey);
+    }
+}
+
+onMounted(restoreDraft);
+
+watch(
+    () => ({
+        modality: form.modality,
+        customer_id: form.customer_id,
+        customer_name: form.customer_name,
+        customer_phone: form.customer_phone,
+        payment_method: form.payment_method,
+        needs_change: form.needs_change,
+        change_for: form.change_for,
+        delivery_address: { ...form.delivery_address },
+        delivery_fee: form.delivery_fee,
+        items: form.items.map((item) => ({
+            ...item,
+            option_ids: [...item.option_ids],
+        })),
+    }),
+    (draft) => {
+        const storageKey = draftStorageKey();
+
+        if (storageKey) {
+            localStorage.setItem(storageKey, JSON.stringify(draft));
+        }
+    },
+    { deep: true, flush: 'sync' },
+);
 
 watch(
     () => form.modality,
@@ -339,13 +468,21 @@ function toggleOption(
     groupOptionIds: number[],
     maxSelections: number,
 ): void {
-    if (item.option_ids.includes(optionId)) {
-        item.option_ids = item.option_ids.filter((id) => id !== optionId);
+    const selectedOptionIndex = item.option_ids.indexOf(optionId);
+
+    if (selectedOptionIndex >= 0) {
+        item.option_ids.splice(selectedOptionIndex, 1);
     } else if (selectedCount(item, groupOptionIds) < maxSelections) {
         item.option_ids.push(optionId);
     }
 
-    form.clearErrors(`items.${form.items.indexOf(item)}.option_ids`);
+    const itemIndex = form.items.findIndex(
+        ({ product_id }) => product_id === item.product_id,
+    );
+
+    if (itemIndex >= 0) {
+        form.clearErrors(`items.${itemIndex}.option_ids`);
+    }
 }
 
 function itemUnitPrice(item: Product & OrderItemInput): number {
@@ -369,7 +506,15 @@ function submitOrder() {
                 addressDialogOpen.value = true;
             }
         },
-        onSuccess: () => router.visit(dashboardUrl.value),
+        onSuccess: () => {
+            const storageKey = draftStorageKey();
+
+            if (storageKey) {
+                localStorage.removeItem(storageKey);
+            }
+
+            router.visit(ordersUrl.value);
+        },
     });
 }
 

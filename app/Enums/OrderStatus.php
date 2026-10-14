@@ -8,6 +8,7 @@ enum OrderStatus: string
     case InPreparation = 'em_preparo';
     case Ready = 'pronto';
     case Finalized = 'finalizado';
+    case Cancelled = 'cancelado';
 
     public function next(): ?self
     {
@@ -15,7 +16,7 @@ enum OrderStatus: string
             self::New => self::InPreparation,
             self::InPreparation => self::Ready,
             self::Ready => self::Finalized,
-            self::Finalized => null,
+            self::Finalized, self::Cancelled => null,
         };
     }
 
@@ -26,6 +27,7 @@ enum OrderStatus: string
             self::InPreparation => 'Em preparo',
             self::Ready => 'Pronto',
             self::Finalized => 'Finalizado',
+            self::Cancelled => 'Cancelado',
         };
     }
 }

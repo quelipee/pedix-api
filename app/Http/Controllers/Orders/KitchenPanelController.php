@@ -32,7 +32,7 @@ class KitchenPanelController extends Controller
 
         $columns = collect($statuses)->mapWithKeys(function (OrderStatus $status) use ($request): array {
             $orders = Order::query()
-                ->with(['items', 'courier'])
+                ->with(['items', 'courier', 'cancelledBy'])
                 ->where('status', $status)
                 ->oldest('created_at')
                 ->oldest('id')
@@ -55,7 +55,7 @@ class KitchenPanelController extends Controller
                 ->where('team_id', $request->user()->current_team_id)
                 ->withCount(['orders as active_deliveries_count' => fn (Builder $query): Builder => $query
                     ->whereNotNull('dispatched_at')
-                    ->where('status', '!=', OrderStatus::Finalized)])
+                    ->whereNotIn('status', [OrderStatus::Finalized->value, OrderStatus::Cancelled->value])])
                 ->orderBy('name')
                 ->get()
                 ->map(fn (Courier $courier): array => [

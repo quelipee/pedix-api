@@ -26,19 +26,23 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $dispatched_at
  * @property OrderStatus $status
  * @property Carbon|null $finalized_at
+ * @property Carbon|null $cancelled_at
+ * @property int|null $cancelled_by
+ * @property string|null $cancellation_reason
  * @property PaymentMethod|null $payment_method
  * @property string|null $change_for
  * @property Carbon|null $created_at
  * @property-read Collection<int, OrderItem> $items
  * @property-read Courier|null $courier
  * @property-read Customer|null $customer
+ * @property-read User|null $cancelledBy
  */
 class Order extends Model
 {
     /** @use HasFactory<OrderFactory> */
     use HasFactory;
 
-    protected $fillable = ['customer_id', 'modality', 'customer_name', 'customer_phone', 'delivery_address', 'delivery_fee', 'courier_id', 'cash_register_id', 'dispatched_at', 'status', 'finalized_at', 'payment_method', 'change_for', 'product_id', 'product_name', 'unit_price', 'quantity', 'notes', 'selected_options'];
+    protected $fillable = ['customer_id', 'modality', 'customer_name', 'customer_phone', 'delivery_address', 'delivery_fee', 'courier_id', 'cash_register_id', 'dispatched_at', 'status', 'finalized_at', 'cancelled_at', 'cancelled_by', 'cancellation_reason', 'payment_method', 'change_for', 'product_id', 'product_name', 'unit_price', 'quantity', 'notes', 'selected_options'];
 
     protected function casts(): array
     {
@@ -46,6 +50,7 @@ class Order extends Model
             'modality' => OrderModality::class,
             'status' => OrderStatus::class,
             'finalized_at' => 'datetime',
+            'cancelled_at' => 'datetime',
             'payment_method' => PaymentMethod::class,
             'change_for' => 'decimal:2',
             'delivery_fee' => 'decimal:2',
@@ -70,6 +75,12 @@ class Order extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function cancelledBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cancelled_by');
     }
 
     public function total(): string

@@ -10,13 +10,14 @@ use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Team;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class CustomerDetailsController extends Controller
 {
-    public function __invoke(Request $request, Team $current_team, Customer $customer): Response
+    public function __invoke(Request $request, Team $current_team, Customer $customer): Response|JsonResponse
     {
         abort_unless(
             $customer->team_id === $current_team->id &&
@@ -25,7 +26,7 @@ class CustomerDetailsController extends Controller
         );
 
         $orders = $customer->orders()
-            ->with(['items', 'courier'])
+            ->with(['items', 'courier', 'cancelledBy'])
             ->latest('created_at')
             ->latest('id')
             ->paginate(10);
@@ -51,7 +52,7 @@ class CustomerDetailsController extends Controller
             ->orderBy('product_name')
             ->first();
 
-        return Inertia::render('customers/Show', [
+        $details = [
             'customer' => CustomerResource::make($customer)->resolve($request),
             'summary' => [
                 'ordersCount' => $customer->orders()->count(),
@@ -68,6 +69,12 @@ class CustomerDetailsController extends Controller
                 'lastPage' => $orders->lastPage(),
                 'total' => $orders->total(),
             ],
-        ]);
+        ];
+
+        if ($request->expectsJson()) {
+            return response()->json($details);
+        }
+
+        return Inertia::render('customers/Show', $details);
     }
 }

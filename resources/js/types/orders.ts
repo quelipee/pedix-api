@@ -1,4 +1,9 @@
-export type OrderStatus = 'novo' | 'em_preparo' | 'pronto' | 'finalizado';
+export type OrderStatus =
+    | 'novo'
+    | 'em_preparo'
+    | 'pronto'
+    | 'finalizado'
+    | 'cancelado';
 
 export type OrderDetails = {
     id: number;
@@ -10,6 +15,9 @@ export type OrderDetails = {
     nextStatus?: OrderStatus | null;
     createdAt: string | null;
     finalizedAt: string | null;
+    cancelledAt: string | null;
+    cancellationReason: string | null;
+    cancelledBy: { id: number; name: string } | null;
     customerName: string | null;
     customerPhone: string | null;
     paymentMethodLabel: string | null;
