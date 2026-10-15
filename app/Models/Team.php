@@ -27,6 +27,7 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, CashRegister> $cashRegisters
  * @property-read Collection<int, Customer> $customers
  * @property-read Collection<int, Product> $products
+ * @property-read Collection<int, ProductCategory> $productCategories
  * @property-read Collection<int, Order> $orders
  * @property-read Collection<int, Membership> $memberships
  * @property-read Collection<int, User> $members
@@ -122,6 +123,12 @@ class Team extends Model
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);
+    }
+
+    /** @return HasMany<ProductCategory, $this> */
+    public function productCategories(): HasMany
+    {
+        return $this->hasMany(ProductCategory::class);
     }
 
     /** @return HasMany<Order, $this> */

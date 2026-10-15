@@ -18,6 +18,7 @@ use App\Http\Controllers\Orders\OrderManagementController;
 use App\Http\Controllers\Products\CreateProductPageController;
 use App\Http\Controllers\Products\EditProductPageController;
 use App\Http\Controllers\Products\ProductCatalogController;
+use App\Http\Controllers\Products\ProductCategoryController;
 use App\Http\Controllers\Products\ProductController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Teams\TeamInvitationController;
@@ -88,6 +89,9 @@ Route::prefix('api/v1')
     ->group(function () {
         Route::get('products', [ProductController::class, 'index'])->middleware(EnsureTeamPermission::class.':'.TeamPermission::ViewProducts->value)->name('products.index');
         Route::post('products', [ProductController::class, 'store'])->middleware(EnsureTeamPermission::class.':'.TeamPermission::ManageProducts->value)->name('products.store');
+        Route::post('product-categories', [ProductCategoryController::class, 'store'])->middleware(EnsureTeamPermission::class.':'.TeamPermission::ManageProducts->value)->name('product-categories.store');
+        Route::patch('product-categories/{product_category}', [ProductCategoryController::class, 'update'])->middleware(EnsureTeamPermission::class.':'.TeamPermission::ManageProducts->value)->name('product-categories.update');
+        Route::delete('product-categories/{product_category}', [ProductCategoryController::class, 'destroy'])->middleware(EnsureTeamPermission::class.':'.TeamPermission::ManageProducts->value)->name('product-categories.destroy');
         Route::patch('products/{product}', [ProductController::class, 'update'])->middleware(EnsureTeamPermission::class.':'.TeamPermission::ManageProducts->value)->name('products.update');
         Route::delete('products/{product}', [ProductController::class, 'destroy'])->middleware(EnsureTeamPermission::class.':'.TeamPermission::ManageProducts->value)->name('products.destroy');
         Route::get('orders', [OrderController::class, 'index'])->middleware(EnsureTeamPermission::class.':'.TeamPermission::ViewOrders->value)->name('orders.index');

@@ -19,6 +19,9 @@ class ApiAuthorizationTest extends TestCase
         $routePermissions = [
             'products.index' => TeamPermission::ViewProducts,
             'products.store' => TeamPermission::ManageProducts,
+            'product-categories.store' => TeamPermission::ManageProducts,
+            'product-categories.update' => TeamPermission::ManageProducts,
+            'product-categories.destroy' => TeamPermission::ManageProducts,
             'products.update' => TeamPermission::ManageProducts,
             'products.destroy' => TeamPermission::ManageProducts,
             'orders.index' => TeamPermission::ViewOrders,

@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * @property int $id
  * @property int $team_id
+ * @property int|null $category_id
  * @property string $name
  * @property string $category
  * @property string|null $description
@@ -26,7 +27,7 @@ class Product extends Model
     /** @use HasFactory<ProductFactory> */
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['team_id', 'name', 'category', 'description', 'ingredients', 'price', 'active'];
+    protected $fillable = ['team_id', 'category_id', 'name', 'category', 'description', 'ingredients', 'price', 'active'];
 
     protected $attributes = ['category' => 'Outros'];
 
@@ -45,6 +46,12 @@ class Product extends Model
     public function team(): BelongsTo
     {
         return $this->belongsTo(Team::class);
+    }
+
+    /** @return BelongsTo<ProductCategory, $this> */
+    public function productCategory(): BelongsTo
+    {
+        return $this->belongsTo(ProductCategory::class, 'category_id');
     }
 
     /** @return HasMany<ProductOptionGroup, $this> */

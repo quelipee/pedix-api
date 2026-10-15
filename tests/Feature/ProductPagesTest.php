@@ -46,7 +46,7 @@ class ProductPagesTest extends TestCase
             );
     }
 
-    public function test_product_creation_page_suggests_existing_categories(): void
+    public function test_product_creation_page_lists_registered_categories(): void
     {
         $user = User::factory()->create();
         Product::factory()->create(['category' => 'Sobremesas']);
@@ -55,8 +55,8 @@ class ProductPagesTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('products/Form')
-                ->has('categories', 5)
-                ->where('categories.4', 'Sobremesas'),
+                ->has('categories', 1)
+                ->where('categories.0.name', 'Sobremesas'),
             );
     }
 

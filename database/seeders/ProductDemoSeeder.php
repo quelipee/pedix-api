@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Product;
+use App\Models\ProductCategory;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -15,6 +16,16 @@ class ProductDemoSeeder extends Seeder
     public function run(): void
     {
         $teamId = Team::query()->value('id') ?? User::factory()->create()->current_team_id;
+
+        $categories = collect(['Lanches', 'Bebidas', 'Batatas', 'Outros'])
+            ->mapWithKeys(function (string $name) use ($teamId): array {
+                $category = ProductCategory::query()->firstOrCreate([
+                    'team_id' => $teamId,
+                    'name' => $name,
+                ]);
+
+                return [$name => $category->id];
+            });
 
         Product::query()
             ->where('team_id', $teamId)
@@ -33,9 +44,22 @@ class ProductDemoSeeder extends Seeder
             ['name' => 'Suco natural', 'category' => 'Bebidas', 'price' => '9.00'],
         ] as $product) {
             if (! Product::withTrashed()->where('team_id', $teamId)->where('name', $product['name'])->exists()) {
-                Product::query()->create([...$product, 'team_id' => $teamId, 'active' => true]);
+                Product::query()->create([
+                    ...$product,
+                    'team_id' => $teamId,
+                    'category_id' => $categories[$product['category']],
+                    'active' => true,
+                ]);
             }
         }
+
+        Product::query()
+            ->where('team_id', $teamId)
+            ->whereNull('category_id')
+            ->get()
+            ->each(function (Product $product) use ($categories): void {
+                $product->update(['category_id' => $categories[$product->category] ?? $categories['Outros']]);
+            });
 
         Product::query()
             ->where('team_id', $teamId)

@@ -3,6 +3,7 @@
 namespace App\Actions\Products;
 
 use App\Models\Product;
+use App\Models\ProductCategory;
 use Illuminate\Support\Facades\DB;
 
 class CreateProduct
@@ -13,6 +14,12 @@ class CreateProduct
         return DB::transaction(function () use ($teamId, $attributes): Product {
             $optionGroups = $attributes['option_groups'] ?? [];
             unset($attributes['option_groups']);
+
+            $category = ProductCategory::query()
+                ->where('team_id', $teamId)
+                ->whereKey($attributes['category_id'])
+                ->firstOrFail();
+            $attributes['category'] = $category->name;
 
             $product = Product::query()->create([...$attributes, 'team_id' => $teamId]);
             $this->createOptionGroups($product, $optionGroups);

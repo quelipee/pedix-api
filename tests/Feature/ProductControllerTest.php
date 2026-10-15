@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\ProductCategory;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -37,10 +38,14 @@ class ProductControllerTest extends TestCase
     public function test_authenticated_users_can_create_a_product(): void
     {
         $user = User::factory()->create();
+        $category = ProductCategory::factory()->create([
+            'team_id' => $user->current_team_id,
+            'name' => 'Bebidas',
+        ]);
 
         $response = $this->actingAs($user)->postJson(route('products.store'), [
             'name' => 'Suco natural',
-            'category' => 'Bebidas',
+            'category_id' => $category->id,
             'price' => '8.50',
             'active' => true,
         ]);
@@ -61,10 +66,14 @@ class ProductControllerTest extends TestCase
     public function test_product_can_store_a_description_and_ingredients(): void
     {
         $user = User::factory()->create();
+        $category = ProductCategory::factory()->create([
+            'team_id' => $user->current_team_id,
+            'name' => 'Lanches',
+        ]);
 
         $response = $this->actingAs($user)->postJson(route('products.store'), [
             'name' => 'X-Salada',
-            'category' => 'Lanches',
+            'category_id' => $category->id,
             'description' => 'Hambúrguer com salada fresca.',
             'ingredients' => ['Pão', 'Hambúrguer', 'Alface', 'Tomate'],
             'price' => '22.00',
@@ -83,10 +92,14 @@ class ProductControllerTest extends TestCase
     public function test_product_creation_rejects_duplicate_ingredients(): void
     {
         $user = User::factory()->create();
+        $category = ProductCategory::factory()->create([
+            'team_id' => $user->current_team_id,
+            'name' => 'Lanches',
+        ]);
 
         $this->actingAs($user)->postJson(route('products.store'), [
             'name' => 'X-Salada',
-            'category' => 'Lanches',
+            'category_id' => $category->id,
             'ingredients' => ['Tomate', 'Tomate'],
             'price' => '22.00',
             'active' => true,
@@ -95,7 +108,7 @@ class ProductControllerTest extends TestCase
         $this->assertDatabaseCount('products', 0);
     }
 
-    public function test_product_without_a_category_is_created_in_outros(): void
+    public function test_product_creation_requires_a_registered_category(): void
     {
         $user = User::factory()->create();
 
@@ -104,21 +117,20 @@ class ProductControllerTest extends TestCase
             'price' => '4.00',
             'active' => true,
         ])
-            ->assertCreated()
-            ->assertJsonPath('data.category', 'Outros');
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('category_id');
 
-        $this->assertDatabaseHas('products', [
-            'name' => 'Água mineral',
-            'category' => 'Outros',
-        ]);
+        $this->assertDatabaseMissing('products', ['name' => 'Água mineral']);
     }
 
     public function test_product_creation_rejects_a_zero_price(): void
     {
         $user = User::factory()->create();
+        $category = ProductCategory::factory()->create(['team_id' => $user->current_team_id]);
 
         $response = $this->actingAs($user)->postJson(route('products.store'), [
             'name' => 'Suco natural',
+            'category_id' => $category->id,
             'price' => '0.00',
             'active' => true,
         ]);
@@ -139,10 +151,11 @@ class ProductControllerTest extends TestCase
             'price' => '15.00',
             'active' => true,
         ]);
+        $product->refresh();
 
         $response = $this->actingAs($user)->patchJson(route('products.update', $product), [
             'name' => 'X-Salada especial',
-            'category' => 'Lanches',
+            'category_id' => $product->category_id,
             'price' => '18.00',
             'active' => false,
         ]);
@@ -165,10 +178,11 @@ class ProductControllerTest extends TestCase
             'category' => 'Lanches',
             'price' => '24.00',
         ]);
+        $product->refresh();
 
         $this->actingAs($user)->patchJson(route('products.update', $product), [
             'name' => $product->name,
-            'category' => $product->category,
+            'category_id' => $product->category_id,
             'description' => $product->description,
             'ingredients' => $product->ingredients,
             'price' => $product->price,
@@ -221,10 +235,14 @@ class ProductControllerTest extends TestCase
     public function test_product_can_be_created_with_option_groups_and_additional_prices(): void
     {
         $user = User::factory()->create();
+        $category = ProductCategory::factory()->create([
+            'team_id' => $user->current_team_id,
+            'name' => 'Lanches',
+        ]);
 
         $response = $this->actingAs($user)->postJson(route('products.store'), [
             'name' => 'X-Bacon',
-            'category' => 'Lanches',
+            'category_id' => $category->id,
             'price' => '22.00',
             'active' => true,
             'option_groups' => [[
@@ -251,6 +269,7 @@ class ProductControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $product = Product::factory()->create(['name' => 'X-Bacon']);
+        $product->refresh();
         $group = $product->optionGroups()->create([
             'name' => 'Adicionais',
             'min_selections' => 0,
@@ -264,7 +283,7 @@ class ProductControllerTest extends TestCase
 
         $this->actingAs($user)->patchJson(route('products.update', $product), [
             'name' => $product->name,
-            'category' => $product->category,
+            'category_id' => $product->category_id,
             'description' => $product->description,
             'ingredients' => $product->ingredients,
             'price' => $product->price,
@@ -288,6 +307,7 @@ class ProductControllerTest extends TestCase
             'team_id' => $otherUser->current_team_id,
             'name' => 'Produto de outra equipe',
         ]);
+        $ownProduct->refresh();
 
         $this->actingAs($user)->getJson(route('products.index'))
             ->assertOk()
@@ -296,7 +316,7 @@ class ProductControllerTest extends TestCase
 
         $payload = [
             'name' => 'Alteração indevida',
-            'category' => 'Outros',
+            'category_id' => $ownProduct->category_id,
             'price' => '10.00',
             'active' => true,
         ];

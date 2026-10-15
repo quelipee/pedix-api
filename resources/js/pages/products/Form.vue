@@ -3,6 +3,7 @@ import { Head, Link, router, useHttp, usePage } from '@inertiajs/vue3';
 import { ArrowLeft, Plus, ShoppingBag, X } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import { Button } from '@/components/ui/button';
+import ProductCategoryDialog from '@/components/products/ProductCategoryDialog.vue';
 import {
     Dialog,
     DialogContent,
@@ -23,6 +24,7 @@ import type { Team } from '@/types';
 
 type Product = {
     id: number;
+    categoryId: number | null;
     name: string;
     category: string;
     description: string | null;
@@ -31,6 +33,8 @@ type Product = {
     active: boolean;
     optionGroups: ProductOptionGroupResource[];
 };
+
+type ProductCategory = { id: number; name: string };
 
 type ProductOptionGroupResource = {
     name: string;
@@ -46,7 +50,10 @@ type ProductOptionGroupInput = {
     options: { name: string; price: string; active: boolean }[];
 };
 
-const props = defineProps<{ categories: string[]; product?: Product }>();
+const props = defineProps<{
+    categories: ProductCategory[];
+    product?: Product;
+}>();
 
 const page = usePage();
 const currentTeam = computed(() => page.props.currentTeam as Team | null);
@@ -62,6 +69,7 @@ const priceDisplay = ref(
 const ingredientDraft = ref('');
 const ingredientError = ref('');
 const deleteDialogOpen = ref(false);
+const categoryDialogOpen = ref(false);
 const deleteError = ref('');
 const currency = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -70,7 +78,7 @@ const currency = new Intl.NumberFormat('pt-BR', {
 
 const form = useHttp<{
     name: string;
-    category: string;
+    category_id: number | null;
     description: string;
     ingredients: string[];
     price: string;
@@ -78,7 +86,7 @@ const form = useHttp<{
     option_groups: ProductOptionGroupInput[];
 }>({
     name: props.product?.name ?? '',
-    category: props.product?.category ?? 'Lanches',
+    category_id: props.product?.categoryId ?? props.categories[0]?.id ?? null,
     description: props.product?.description ?? '',
     ingredients: [...(props.product?.ingredients ?? [])],
     price: props.product?.price ?? '',
@@ -275,31 +283,43 @@ defineOptions({
                         </div>
 
                         <div class="grid gap-2">
-                            <Label for="product-category">Categoria</Label>
-                            <input
+                            <div
+                                class="flex items-center justify-between gap-3"
+                            >
+                                <Label for="product-category">Categoria</Label>
+                                <button
+                                    type="button"
+                                    class="text-xs font-medium text-primary hover:underline"
+                                    @click="categoryDialogOpen = true"
+                                >
+                                    + Nova categoria
+                                </button>
+                            </div>
+                            <select
                                 id="product-category"
-                                v-model="form.category"
-                                list="product-categories"
-                                maxlength="80"
-                                placeholder="Ex.: Lanches"
+                                v-model="form.category_id"
                                 class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-                            />
-                            <datalist id="product-categories">
+                            >
+                                <option :value="null" disabled>
+                                    Selecione uma categoria
+                                </option>
                                 <option
                                     v-for="category in categories"
-                                    :key="category"
-                                    :value="category"
-                                />
-                            </datalist>
+                                    :key="category.id"
+                                    :value="category.id"
+                                >
+                                    {{ category.name }}
+                                </option>
+                            </select>
                             <p class="text-xs text-muted-foreground">
-                                Escolha uma sugestão ou digite uma nova
-                                categoria.
+                                As categorias são cadastradas separadamente no
+                                cardápio.
                             </p>
                             <p
-                                v-if="form.errors.category"
+                                v-if="form.errors.category_id"
                                 class="text-sm text-destructive"
                             >
-                                {{ form.errors.category }}
+                                {{ form.errors.category_id }}
                             </p>
                         </div>
 
@@ -600,7 +620,11 @@ defineOptions({
                             <ShoppingBag class="size-5" />
                         </span>
                         <p class="mt-4 text-xs text-muted-foreground">
-                            {{ form.category || 'Categoria' }}
+                            {{
+                                categories.find(
+                                    ({ id }) => id === form.category_id,
+                                )?.name ?? 'Categoria'
+                            }}
                         </p>
                         <h3 class="mt-1 font-semibold">
                             {{ form.name || 'Nome do item' }}
@@ -715,5 +739,10 @@ defineOptions({
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+
+        <ProductCategoryDialog
+            v-model:open="categoryDialogOpen"
+            :categories="categories"
+        />
     </div>
 </template>

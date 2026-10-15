@@ -2,6 +2,8 @@
 import { Head, Link, router, useHttp, usePage } from '@inertiajs/vue3';
 import { PackageOpen, Plus, Search } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import ProductCategoryDialog from '@/components/products/ProductCategoryDialog.vue';
+import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -18,6 +20,7 @@ import type { Team } from '@/types';
 
 type Product = {
     id: number;
+    categoryId: number | null;
     name: string;
     category: string;
     description: string | null;
@@ -26,23 +29,29 @@ type Product = {
     active: boolean;
 };
 
-const props = defineProps<{ products: Product[] }>();
+type ProductCategory = { id: number; name: string };
+
+const props = defineProps<{
+    products: Product[];
+    categories: ProductCategory[];
+}>();
 
 const page = usePage();
 const selectedCategory = ref<string | null>(null);
 const searchTerm = ref('');
 const updatingProductId = ref<number | null>(null);
 const availabilityError = ref('');
+const categoryDialogOpen = ref(false);
 const availabilityForm = useHttp<{
     name: string;
-    category: string;
+    category_id: number | null;
     description: string | null;
     ingredients: string[];
     price: string;
     active: boolean;
 }>({
     name: '',
-    category: '',
+    category_id: null,
     description: null,
     ingredients: [],
     price: '',
@@ -58,7 +67,9 @@ const currency = new Intl.NumberFormat('pt-BR', {
 });
 
 const productsByCategory = computed(() => {
-    const categories = new Map<string, Product[]>();
+    const categories = new Map<string, Product[]>(
+        props.categories.map(({ name }) => [name, []]),
+    );
 
     for (const product of props.products) {
         const products = categories.get(product.category) ?? [];
@@ -114,7 +125,7 @@ function toggleAvailability(product: Product): void {
     updatingProductId.value = product.id;
     availabilityError.value = '';
     availabilityForm.name = product.name;
-    availabilityForm.category = product.category;
+    availabilityForm.category_id = product.categoryId;
     availabilityForm.description = product.description;
     availabilityForm.ingredients = product.ingredients;
     availabilityForm.price = product.price;
@@ -152,13 +163,24 @@ defineOptions({
                     produtos.
                 </p>
             </div>
-            <Link
-                :href="createUrl"
-                class="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-            >
-                <Plus class="size-4" />
-                Novo item
-            </Link>
+            <div class="flex flex-wrap gap-2">
+                <Button
+                    type="button"
+                    variant="outline"
+                    class="gap-2 rounded-xl"
+                    @click="categoryDialogOpen = true"
+                >
+                    <Plus class="size-4" />
+                    Nova categoria
+                </Button>
+                <Link
+                    :href="createUrl"
+                    class="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                    <Plus class="size-4" />
+                    Novo item
+                </Link>
+            </div>
         </header>
 
         <section
@@ -216,15 +238,15 @@ defineOptions({
             </span>
             <h2 class="mt-4 font-semibold">Nenhum item cadastrado</h2>
             <p class="mt-1 max-w-sm text-sm text-muted-foreground">
-                Cadastre o primeiro produto para criar as categorias do seu
-                cardápio.
+                Crie uma categoria para começar a organizar seu cardápio.
             </p>
-            <Link
-                :href="createUrl"
+            <button
+                type="button"
                 class="mt-4 text-sm font-medium text-primary hover:underline"
+                @click="categoryDialogOpen = true"
             >
-                Criar primeiro item
-            </Link>
+                Criar primeira categoria
+            </button>
         </section>
 
         <Dialog
@@ -342,5 +364,10 @@ defineOptions({
                 </div>
             </DialogContent>
         </Dialog>
+
+        <ProductCategoryDialog
+            v-model:open="categoryDialogOpen"
+            :categories="categories"
+        />
     </div>
 </template>

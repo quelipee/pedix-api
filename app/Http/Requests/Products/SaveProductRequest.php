@@ -4,6 +4,7 @@ namespace App\Http\Requests\Products;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class SaveProductRequest extends FormRequest
 {
@@ -24,7 +25,12 @@ class SaveProductRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'category' => ['sometimes', 'required', 'string', 'max:80'],
+            'category_id' => [
+                'required',
+                'integer',
+                Rule::exists('product_categories', 'id')
+                    ->where('team_id', $this->user()->current_team_id),
+            ],
             'description' => ['nullable', 'string', 'max:1000'],
             'ingredients' => ['nullable', 'array', 'max:30'],
             'ingredients.*' => ['required', 'string', 'max:80', 'distinct'],

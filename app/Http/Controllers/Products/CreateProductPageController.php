@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Products;
 
 use App\Http\Controllers\Controller;
-use App\Models\Product;
+use App\Models\ProductCategory;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -15,14 +15,10 @@ class CreateProductPageController extends Controller
      */
     public function __invoke(Request $request): Response
     {
-        $categories = Product::query()
+        $categories = ProductCategory::query()
             ->where('team_id', $request->user()->current_team_id)
-            ->distinct()
-            ->pluck('category')
-            ->merge(['Lanches', 'Bebidas', 'Batatas', 'Outros'])
-            ->unique()
-            ->sort(SORT_NATURAL | SORT_FLAG_CASE)
-            ->values();
+            ->orderBy('name')
+            ->get(['id', 'name']);
 
         return Inertia::render('products/Form', ['categories' => $categories]);
     }

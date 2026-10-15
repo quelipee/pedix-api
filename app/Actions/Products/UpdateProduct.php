@@ -3,6 +3,7 @@
 namespace App\Actions\Products;
 
 use App\Models\Product;
+use App\Models\ProductCategory;
 use Illuminate\Support\Facades\DB;
 
 class UpdateProduct
@@ -14,6 +15,12 @@ class UpdateProduct
             $shouldReplaceOptionGroups = array_key_exists('option_groups', $attributes);
             $optionGroups = $attributes['option_groups'] ?? [];
             unset($attributes['option_groups']);
+
+            $category = ProductCategory::query()
+                ->where('team_id', $product->team_id)
+                ->whereKey($attributes['category_id'])
+                ->firstOrFail();
+            $attributes['category'] = $category->name;
 
             $product->update($attributes);
 
