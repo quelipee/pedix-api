@@ -91,9 +91,9 @@ const firstName = computed(() => user.value.name.split(' ')[0]);
                 aria-label="Ir para a visão geral"
             >
                 <span
-                    class="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground"
+                    class="grid size-9 shrink-0 place-items-center rounded-xl border border-black/8 bg-white text-[#163c2c] shadow-sm dark:border-white/10"
                 >
-                    <AppLogoIcon class="size-5 fill-current" />
+                    <AppLogoIcon class="size-7" />
                 </span>
                 <span
                     class="hidden max-w-48 truncate text-sm font-semibold sm:block"

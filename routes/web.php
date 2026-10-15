@@ -12,6 +12,7 @@ use App\Http\Controllers\Customers\CustomerListController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Orders\CreateOrderPageController;
 use App\Http\Controllers\Orders\KitchenPanelController;
+use App\Http\Controllers\Orders\OrderCommandController;
 use App\Http\Controllers\Orders\OrderController;
 use App\Http\Controllers\Orders\OrderManagementController;
 use App\Http\Controllers\Products\CreateProductPageController;
@@ -48,6 +49,9 @@ Route::prefix('{current_team}')
         Route::get('orders/create', CreateOrderPageController::class)
             ->middleware(EnsureTeamPermission::class.':'.TeamPermission::CreateOrder->value)
             ->name('orders.create');
+        Route::get('orders/{order}/command', OrderCommandController::class)
+            ->middleware(EnsureTeamPermission::class.':'.TeamPermission::ViewOrders->value)
+            ->name('orders.command');
         Route::get('products', ProductCatalogController::class)
             ->middleware(EnsureTeamPermission::class.':'.TeamPermission::ViewProducts->value)
             ->name('products.catalog');

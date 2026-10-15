@@ -49,7 +49,7 @@ const mainNavItems = computed<NavItem[]>(() => [
                             :href="dashboardUrl"
                             aria-label="Início da lanchonete"
                         >
-                            <AppLogoIcon class="size-5 fill-current" />
+                            <AppLogoIcon class="size-7 text-[#163c2c]" />
                         </Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>

@@ -1,12 +1,7 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import {
-    ArrowUpRight,
-    ChefHat,
-    Check,
-    Clock3,
-    ClipboardList,
-} from '@lucide/vue';
+import { ArrowUpRight, Check, Clock3, ClipboardList } from '@lucide/vue';
+import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import { home } from '@/routes';
 
 const page = usePage();
@@ -39,8 +34,8 @@ defineProps<{
                 class="relative z-10 inline-flex w-fit items-center gap-3 rounded-full focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
             >
                 <span
-                    class="flex size-11 items-center justify-center rounded-2xl bg-[#e9a45f] text-[#17372d]"
-                    ><ChefHat class="size-6"
+                    class="flex size-11 items-center justify-center rounded-2xl bg-white text-[#17372d] shadow-sm"
+                    ><AppLogoIcon class="size-10"
                 /></span>
                 <span class="text-base font-semibold tracking-wide">{{
                     name
@@ -123,8 +118,8 @@ defineProps<{
                     class="mb-9 inline-flex items-center gap-2.5 font-semibold lg:hidden"
                 >
                     <span
-                        class="flex size-9 items-center justify-center rounded-xl bg-[#17372d] text-[#f2cfaa]"
-                        ><ChefHat class="size-5"
+                        class="flex size-9 items-center justify-center rounded-xl border bg-white text-[#17372d] shadow-sm"
+                        ><AppLogoIcon class="size-8"
                     /></span>
                     {{ name }}
                 </Link>

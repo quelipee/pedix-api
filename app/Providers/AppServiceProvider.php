@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Contracts\CashRegisterCalculator;
+use App\Contracts\OrderCommandFormatter;
 use App\Contracts\SalesReport;
+use App\Services\DefaultOrderCommandFormatter;
 use App\Services\EloquentCashRegisterCalculator;
 use App\Services\EloquentSalesReport;
 use Carbon\CarbonImmutable;
@@ -20,6 +22,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(CashRegisterCalculator::class, EloquentCashRegisterCalculator::class);
+        $this->app->bind(OrderCommandFormatter::class, DefaultOrderCommandFormatter::class);
         $this->app->bind(SalesReport::class, EloquentSalesReport::class);
     }
 

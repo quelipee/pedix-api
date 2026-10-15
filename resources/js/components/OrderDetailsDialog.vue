@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { usePage } from '@inertiajs/vue3';
 import {
     Dialog,
     DialogContent,
@@ -6,12 +7,15 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Bike } from '@lucide/vue';
+import { Button } from '@/components/ui/button';
+import { command as orderCommand } from '@/routes/orders';
+import { Bike, Printer } from '@lucide/vue';
 import type { OrderDetails, OrderStatus } from '@/types/orders';
 
 defineProps<{ order: OrderDetails | null }>();
 
 const emit = defineEmits<{ close: [] }>();
+const page = usePage();
 
 const currency = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -47,6 +51,14 @@ function formatOrderDate(value: string | null): string {
         dateStyle: 'short',
         timeStyle: 'short',
     }).format(new Date(value));
+}
+
+function commandUrl(orderId: number): string {
+    const team = page.props.currentTeam;
+
+    return team
+        ? orderCommand({ current_team: team.slug, order: orderId }).url
+        : '#';
 }
 </script>
 
@@ -245,6 +257,17 @@ function formatOrderDate(value: string | null): string {
                         {{ currency.format(Number(order.total)) }}
                     </span>
                 </div>
+
+                <Button as-child class="w-full gap-2 rounded-xl">
+                    <a
+                        :href="commandUrl(order.id)"
+                        target="_blank"
+                        rel="noopener"
+                    >
+                        <Printer class="size-4" />
+                        Abrir comanda para impressão
+                    </a>
+                </Button>
             </div>
         </DialogContent>
     </Dialog>
