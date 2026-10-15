@@ -32,6 +32,7 @@ class CustomerDetailsController extends Controller
             ->paginate(10);
 
         $finalizedOrders = Order::query()
+            ->where('team_id', $request->user()->current_team_id)
             ->where('customer_id', $customer->id)
             ->where('status', OrderStatus::Finalized);
         $itemsTotal = OrderItem::query()

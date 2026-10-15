@@ -7,6 +7,8 @@ use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\Team;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -17,11 +19,14 @@ class OrderDemoSeeder extends Seeder
      */
     public function run(): void
     {
-        if (Order::query()->exists()) {
+        $teamId = Team::query()->value('id') ?? User::factory()->create()->current_team_id;
+
+        if (Order::query()->where('team_id', $teamId)->exists()) {
             return;
         }
 
         $products = Product::query()
+            ->where('team_id', $teamId)
             ->where('active', true)
             ->orderBy('id')
             ->limit(2)
@@ -46,11 +51,12 @@ class OrderDemoSeeder extends Seeder
 
         $seededAt = now();
 
-        DB::transaction(function () use ($orders, $products, $seededAt): void {
+        DB::transaction(function () use ($orders, $products, $seededAt, $teamId): void {
             foreach ($orders as $orderData) {
                 $createdAt = $seededAt->copy()->subMinutes($orderData['minutes_ago']);
 
                 $order = Order::factory()->create([
+                    'team_id' => $teamId,
                     'modality' => $orderData['modality'],
                     'status' => $orderData['status'],
                     'payment_method' => $orderData['payment_method'],

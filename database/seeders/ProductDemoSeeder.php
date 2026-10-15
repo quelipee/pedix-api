@@ -3,6 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\Product;
+use App\Models\Team;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class ProductDemoSeeder extends Seeder
@@ -12,7 +14,10 @@ class ProductDemoSeeder extends Seeder
      */
     public function run(): void
     {
+        $teamId = Team::query()->value('id') ?? User::factory()->create()->current_team_id;
+
         Product::query()
+            ->where('team_id', $teamId)
             ->where('name', 'Refrigerante lata')
             ->where('category', 'Bebidas')
             ->where('price', '6.00')
@@ -27,12 +32,13 @@ class ProductDemoSeeder extends Seeder
             ['name' => 'Sprite lata 350 ml', 'category' => 'Bebidas', 'price' => '7.00'],
             ['name' => 'Suco natural', 'category' => 'Bebidas', 'price' => '9.00'],
         ] as $product) {
-            if (! Product::withTrashed()->where('name', $product['name'])->exists()) {
-                Product::query()->create([...$product, 'active' => true]);
+            if (! Product::withTrashed()->where('team_id', $teamId)->where('name', $product['name'])->exists()) {
+                Product::query()->create([...$product, 'team_id' => $teamId, 'active' => true]);
             }
         }
 
         Product::query()
+            ->where('team_id', $teamId)
             ->where('category', 'Lanches')
             ->where('active', true)
             ->each(function (Product $product): void {

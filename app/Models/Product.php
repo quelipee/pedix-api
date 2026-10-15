@@ -6,11 +6,13 @@ use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property int $id
+ * @property int $team_id
  * @property string $name
  * @property string $category
  * @property string|null $description
@@ -24,7 +26,7 @@ class Product extends Model
     /** @use HasFactory<ProductFactory> */
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['name', 'category', 'description', 'ingredients', 'price', 'active'];
+    protected $fillable = ['team_id', 'name', 'category', 'description', 'ingredients', 'price', 'active'];
 
     protected $attributes = ['category' => 'Outros'];
 
@@ -37,6 +39,12 @@ class Product extends Model
     public function orderItems(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    /** @return BelongsTo<Team, $this> */
+    public function team(): BelongsTo
+    {
+        return $this->belongsTo(Team::class);
     }
 
     /** @return HasMany<ProductOptionGroup, $this> */

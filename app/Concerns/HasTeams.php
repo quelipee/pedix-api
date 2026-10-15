@@ -168,6 +168,20 @@ trait HasTeams
         $role = $this->teamRole($team);
 
         return new TeamPermissions(
+            canViewDashboard: $role?->hasPermission(TeamPermission::ViewDashboard) ?? false,
+            canViewOrders: $role?->hasPermission(TeamPermission::ViewOrders) ?? false,
+            canCreateOrder: $role?->hasPermission(TeamPermission::CreateOrder) ?? false,
+            canUpdateOrderStatus: $role?->hasPermission(TeamPermission::UpdateOrderStatus) ?? false,
+            canDispatchOrder: $role?->hasPermission(TeamPermission::DispatchOrder) ?? false,
+            canCancelOrder: $role?->hasPermission(TeamPermission::CancelOrder) ?? false,
+            canViewProducts: $role?->hasPermission(TeamPermission::ViewProducts) ?? false,
+            canManageProducts: $role?->hasPermission(TeamPermission::ManageProducts) ?? false,
+            canViewCustomers: $role?->hasPermission(TeamPermission::ViewCustomers) ?? false,
+            canManageCustomers: $role?->hasPermission(TeamPermission::ManageCustomers) ?? false,
+            canManageCouriers: $role?->hasPermission(TeamPermission::ManageCouriers) ?? false,
+            canViewCashRegister: $role?->hasPermission(TeamPermission::ViewCashRegister) ?? false,
+            canManageCashRegister: $role?->hasPermission(TeamPermission::ManageCashRegister) ?? false,
+            canViewReports: $role?->hasPermission(TeamPermission::ViewReports) ?? false,
             canUpdateTeam: $role?->hasPermission(TeamPermission::UpdateTeam) ?? false,
             canDeleteTeam: $role?->hasPermission(TeamPermission::DeleteTeam) ?? false,
             canAddMember: $role?->hasPermission(TeamPermission::AddMember) ?? false,

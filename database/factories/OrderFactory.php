@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Enums\OrderModality;
 use App\Enums\OrderStatus;
 use App\Models\Order;
+use App\Models\Team;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -20,6 +21,7 @@ class OrderFactory extends Factory
     public function definition(): array
     {
         return [
+            'team_id' => fn () => Team::query()->value('id') ?? Team::factory(),
             'modality' => OrderModality::Takeaway,
             'status' => OrderStatus::New,
             'payment_method' => null,

@@ -59,10 +59,22 @@ class EnsureTeamMembership
     {
         $team = $request->route('current_team') ?? $request->route('team');
 
+        if ($team === null) {
+            $user = $request->user();
+
+            if (! $user instanceof User) {
+                return null;
+            }
+
+            $currentTeam = $user->currentTeam;
+
+            return $currentTeam instanceof Team ? $currentTeam : null;
+        }
+
         if (is_string($team)) {
             $team = Team::where('slug', $team)->first();
         }
 
-        return $team;
+        return $team instanceof Team ? $team : null;
     }
 }

@@ -16,10 +16,14 @@ class DashboardController extends Controller
 {
     public function __invoke(Request $request): Response
     {
+        $teamId = $request->user()->current_team_id;
+        abort_if($teamId === null, 403);
+
         $startOfToday = now()->startOfDay();
         $startOfTomorrow = $startOfToday->copy()->addDay();
 
         $todayOrderCounts = Order::query()
+            ->where('team_id', $teamId)
             ->where('created_at', '>=', $startOfToday)
             ->where('created_at', '<', $startOfTomorrow)
             ->selectRaw('status, COUNT(*) as total')
@@ -34,6 +38,7 @@ class DashboardController extends Controller
 
         $recentOrders = Order::query()
             ->with(['items', 'courier', 'cancelledBy'])
+            ->where('team_id', $teamId)
             ->latest('created_at')
             ->limit(5)
             ->get(['id', 'customer_name', 'customer_phone', 'payment_method', 'change_for', 'delivery_address', 'delivery_fee', 'courier_id', 'dispatched_at', 'modality', 'status', 'created_at'])
@@ -105,7 +110,7 @@ class DashboardController extends Controller
             ],
             'recentOrders' => $recentOrders,
             'products' => ProductResource::collection(
-                Product::query()->with('optionGroups.options')->where('active', true)->orderBy('name')->get(),
+                Product::query()->with('optionGroups.options')->where('team_id', $teamId)->where('active', true)->orderBy('name')->get(),
             )->resolve(),
             'pendingInvitations' => $pendingInvitations,
         ]);

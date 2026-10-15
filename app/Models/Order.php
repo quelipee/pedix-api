@@ -15,6 +15,7 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
+ * @property int $team_id
  * @property int|null $customer_id
  * @property OrderModality $modality
  * @property string|null $customer_name
@@ -42,7 +43,7 @@ class Order extends Model
     /** @use HasFactory<OrderFactory> */
     use HasFactory;
 
-    protected $fillable = ['customer_id', 'modality', 'customer_name', 'customer_phone', 'delivery_address', 'delivery_fee', 'courier_id', 'cash_register_id', 'dispatched_at', 'status', 'finalized_at', 'cancelled_at', 'cancelled_by', 'cancellation_reason', 'payment_method', 'change_for', 'product_id', 'product_name', 'unit_price', 'quantity', 'notes', 'selected_options'];
+    protected $fillable = ['team_id', 'customer_id', 'modality', 'customer_name', 'customer_phone', 'delivery_address', 'delivery_fee', 'courier_id', 'cash_register_id', 'dispatched_at', 'status', 'finalized_at', 'cancelled_at', 'cancelled_by', 'cancellation_reason', 'payment_method', 'change_for', 'product_id', 'product_name', 'unit_price', 'quantity', 'notes', 'selected_options'];
 
     protected function casts(): array
     {
@@ -63,6 +64,12 @@ class Order extends Model
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    /** @return BelongsTo<Team, $this> */
+    public function team(): BelongsTo
+    {
+        return $this->belongsTo(Team::class);
     }
 
     /** @return BelongsTo<Courier, $this> */

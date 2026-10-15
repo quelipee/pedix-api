@@ -96,6 +96,7 @@ const statusClasses: Record<OrderStatus, string> = {
         'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300',
     pronto: 'bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300',
     finalizado: 'bg-muted text-muted-foreground',
+    cancelado: 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300',
 };
 
 const today = new Intl.DateTimeFormat('pt-BR', {

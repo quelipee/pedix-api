@@ -42,6 +42,20 @@ export type DashboardInvitation = {
 };
 
 export type TeamPermissions = {
+    canViewDashboard: boolean;
+    canViewOrders: boolean;
+    canCreateOrder: boolean;
+    canUpdateOrderStatus: boolean;
+    canDispatchOrder: boolean;
+    canCancelOrder: boolean;
+    canViewProducts: boolean;
+    canManageProducts: boolean;
+    canViewCustomers: boolean;
+    canManageCustomers: boolean;
+    canManageCouriers: boolean;
+    canViewCashRegister: boolean;
+    canManageCashRegister: boolean;
+    canViewReports: boolean;
     canUpdateTeam: boolean;
     canDeleteTeam: boolean;
     canAddMember: boolean;

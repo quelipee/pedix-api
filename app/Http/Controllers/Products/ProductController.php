@@ -10,24 +10,34 @@ use App\Http\Requests\Products\SaveProductRequest;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
 class ProductController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        return ProductResource::collection(Product::query()->with('optionGroups.options')->orderBy('name')->get())->response();
+        return ProductResource::collection(Product::query()
+            ->with('optionGroups.options')
+            ->where('team_id', $request->user()->current_team_id)
+            ->orderBy('name')
+            ->get())->response();
     }
 
     public function store(SaveProductRequest $request, CreateProduct $createProduct): JsonResponse
     {
-        $product = $createProduct->handle($request->validated());
+        $teamId = $request->user()->current_team_id;
+        abort_if($teamId === null, 403);
+
+        $product = $createProduct->handle($teamId, $request->validated());
 
         return ProductResource::make($product->load('optionGroups.options'))->response()->setStatusCode(201);
     }
 
     public function update(SaveProductRequest $request, Product $product, UpdateProduct $updateProduct): JsonResponse
     {
+        abort_unless($product->team_id === $request->user()->current_team_id, 404);
+
         $updateProduct->handle($product, $request->validated());
 
         return ProductResource::make($product->refresh()->load('optionGroups.options'))->response();
@@ -35,6 +45,8 @@ class ProductController extends Controller
 
     public function destroy(Product $product, DeleteProduct $deleteProduct): Response
     {
+        abort_unless($product->team_id === request()->user()->current_team_id, 404);
+
         $deleteProduct->handle($product);
 
         return response()->noContent();

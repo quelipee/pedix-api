@@ -15,7 +15,7 @@ class StoreOrderRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->current_team_id !== null;
     }
 
     /**
@@ -47,7 +47,7 @@ class StoreOrderRequest extends FormRequest
             'delivery_address.state' => ['nullable', 'required_if:modality,entrega', 'string', 'size:2'],
             'delivery_fee' => ['exclude_unless:modality,entrega', 'required', 'numeric', 'min:0', 'decimal:0,2', 'max:99999999.99'],
             'items' => ['required', 'array', 'min:1'],
-            'items.*.product_id' => ['required', 'integer', 'distinct', Rule::exists('products', 'id')->where('active', true)->whereNull('deleted_at')],
+            'items.*.product_id' => ['required', 'integer', 'distinct', Rule::exists('products', 'id')->where('team_id', $this->user()->current_team_id)->where('active', true)->whereNull('deleted_at')],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:999'],
             'items.*.notes' => ['nullable', 'string', 'max:500'],
             'items.*.option_ids' => ['sometimes', 'array', 'max:100'],

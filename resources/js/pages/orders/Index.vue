@@ -3,6 +3,7 @@ import { Head, Link, router, useHttp, usePage } from '@inertiajs/vue3';
 import { useIntervalFn } from '@vueuse/core';
 import {
     ArrowRight,
+    Ban,
     Bike,
     ClipboardList,
     Clock3,
@@ -14,6 +15,7 @@ import {
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import DispatchOrderDialog from '@/components/DispatchOrderDialog.vue';
+import CancelOrderDialog from '@/components/CancelOrderDialog.vue';
 import OrderDetailsDialog from '@/components/OrderDetailsDialog.vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -33,12 +35,14 @@ const props = defineProps<{
 }>();
 
 const page = usePage();
+const permissions = computed(() => page.props.permissions);
 const currentTeam = computed(() => page.props.currentTeam as Team | null);
 const historyUrl = computed(() =>
     currentTeam.value ? orderHistory(currentTeam.value.slug).url : '/',
 );
 const selectedOrder = ref<OrderDetails | null>(null);
 const dispatchingOrder = ref<OrderDetails | null>(null);
+const cancellingOrder = ref<OrderDetails | null>(null);
 const advancingOrderId = ref<number | null>(null);
 const advanceError = ref('');
 const refreshing = ref(false);
@@ -83,7 +87,12 @@ const refreshedTime = computed(() =>
 );
 
 function refreshBoard(force = false): void {
-    if (!force && (advanceForm.processing || dispatchingOrder.value !== null)) {
+    if (
+        !force &&
+        (advanceForm.processing ||
+            dispatchingOrder.value !== null ||
+            cancellingOrder.value !== null)
+    ) {
         return;
     }
 
@@ -201,6 +210,15 @@ defineOptions({
     <Head title="Pedidos" />
 
     <OrderDetailsDialog :order="selectedOrder" @close="selectedOrder = null" />
+    <CancelOrderDialog
+        v-if="permissions?.canCancelOrder"
+        :order="cancellingOrder"
+        @close="cancellingOrder = null"
+        @cancelled="
+            cancellingOrder = null;
+            refreshBoard(true);
+        "
+    />
     <DispatchOrderDialog
         :order="dispatchingOrder"
         :couriers="couriers"
@@ -380,7 +398,19 @@ defineOptions({
 
                             <div class="flex flex-wrap justify-end gap-2">
                                 <Button
+                                    v-if="permissions?.canCancelOrder"
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    class="gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                    @click="cancellingOrder = order"
+                                >
+                                    <Ban class="size-4" />
+                                    Cancelar
+                                </Button>
+                                <Button
                                     v-if="
+                                        permissions?.canDispatchOrder &&
                                         order.status === 'em_preparo' &&
                                         order.modality === 'entrega'
                                     "
@@ -396,7 +426,10 @@ defineOptions({
                                     {{ order.courier ? 'Trocar' : 'Motoboy' }}
                                 </Button>
                                 <Button
-                                    v-if="nextStatus(order)"
+                                    v-if="
+                                        permissions?.canUpdateOrderStatus &&
+                                        nextStatus(order)
+                                    "
                                     type="button"
                                     size="sm"
                                     class="gap-1.5"

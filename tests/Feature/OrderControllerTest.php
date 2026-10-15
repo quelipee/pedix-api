@@ -75,6 +75,7 @@ class OrderControllerTest extends TestCase
 
         $this->assertDatabaseHas('orders', [
             'id' => 1,
+            'team_id' => $user->current_team_id,
             'modality' => 'retirada',
             'customer_name' => 'Mariana Costa',
             'customer_phone' => '(11) 99999-0000',
@@ -393,6 +394,58 @@ class OrderControllerTest extends TestCase
         ]);
     }
 
+    public function test_an_active_order_can_be_cancelled_with_audit_information(): void
+    {
+        $user = User::factory()->create();
+        $order = Order::factory()->create(['status' => 'em_preparo']);
+
+        $this->actingAs($user)
+            ->patchJson(route('orders.cancel', $order), [
+                'reason' => '  Cliente desistiu do pedido.  ',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'cancelado')
+            ->assertJsonPath('data.statusLabel', 'Cancelado')
+            ->assertJsonPath('data.cancellationReason', 'Cliente desistiu do pedido.')
+            ->assertJsonPath('data.cancelledBy.id', $user->id)
+            ->assertJsonPath('data.cancelledBy.name', $user->name)
+            ->assertJsonPath('data.nextStatus', null);
+
+        $this->assertDatabaseHas('orders', [
+            'id' => $order->id,
+            'status' => 'cancelado',
+            'cancelled_by' => $user->id,
+            'cancellation_reason' => 'Cliente desistiu do pedido.',
+        ]);
+        $this->assertNotNull($order->refresh()->cancelled_at);
+    }
+
+    public function test_a_finalized_or_cancelled_order_cannot_be_cancelled(): void
+    {
+        $user = User::factory()->create();
+        $finalized = Order::factory()->create(['status' => 'finalizado']);
+        $cancelled = Order::factory()->create([
+            'status' => 'cancelado',
+            'cancelled_at' => now(),
+            'cancelled_by' => $user->id,
+        ]);
+
+        $this->actingAs($user)
+            ->patchJson(route('orders.cancel', $finalized))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('order');
+
+        $this->patchJson(route('orders.cancel', $cancelled))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('order');
+
+        $this->assertDatabaseHas('orders', [
+            'id' => $finalized->id,
+            'status' => 'finalizado',
+            'cancelled_at' => null,
+        ]);
+    }
+
     public function test_order_items_keep_the_original_product_name_and_price(): void
     {
         $user = User::factory()->create();
@@ -476,5 +529,40 @@ class OrderControllerTest extends TestCase
         $this->actingAs($user)->postJson(route('orders.store'), $payload)
             ->assertUnprocessable()
             ->assertJsonValidationErrors('items.0.option_ids');
+    }
+
+    public function test_orders_and_order_products_are_isolated_between_teams(): void
+    {
+        $user = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $ownOrder = Order::factory()->create(['team_id' => $user->current_team_id]);
+        $otherOrder = Order::factory()->create(['team_id' => $otherUser->current_team_id]);
+        $otherProduct = Product::factory()->create(['team_id' => $otherUser->current_team_id]);
+
+        $this->actingAs($user)->getJson(route('orders.index'))
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $ownOrder->id)
+            ->assertJsonCount(0, 'products');
+
+        $this->actingAs($user)->postJson(route('orders.store'), [
+            'modality' => 'retirada',
+            'payment_method' => 'pix',
+            'items' => [['product_id' => $otherProduct->id, 'quantity' => 1]],
+        ])->assertUnprocessable()->assertJsonValidationErrors('items.0.product_id');
+
+        $this->actingAs($user)->patchJson(route('orders.advance', $otherOrder), [
+            'status' => 'em_preparo',
+        ])->assertNotFound();
+
+        $this->actingAs($user)->patchJson(route('orders.cancel', $otherOrder), [
+            'reason' => 'Tentativa indevida',
+        ])->assertNotFound();
+
+        $this->assertDatabaseHas('orders', [
+            'id' => $otherOrder->id,
+            'team_id' => $otherUser->current_team_id,
+            'status' => 'novo',
+        ]);
     }
 }

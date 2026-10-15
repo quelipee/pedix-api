@@ -48,6 +48,7 @@ class CreateOrder
         ): Order {
             $products = Product::query()
                 ->with('optionGroups.options')
+                ->where('team_id', $teamId)
                 ->whereIn('id', collect($items)->pluck('product_id'))
                 ->where('active', true)
                 ->lockForUpdate()
@@ -93,6 +94,7 @@ class CreateOrder
             );
 
             $order = Order::query()->create([
+                'team_id' => $teamId,
                 'customer_id' => $customer?->id,
                 'modality' => OrderModality::from($modality),
                 'customer_name' => $customerName,

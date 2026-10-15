@@ -21,6 +21,9 @@ class OrderManagementController extends Controller
      */
     public function __invoke(Request $request): Response
     {
+        $teamId = $request->user()->current_team_id;
+        abort_if($teamId === null, 403);
+
         $requestedStatus = $request->query('status');
         $status = is_string($requestedStatus) && OrderStatus::tryFrom($requestedStatus)
             ? $requestedStatus
@@ -45,12 +48,14 @@ class OrderManagementController extends Controller
         };
 
         $statusCounts = Order::query()
+            ->where('team_id', $teamId)
             ->selectRaw('status, COUNT(*) as total')
             ->groupBy('status')
             ->pluck('total', 'status');
 
         $orders = Order::query()
             ->with(['items', 'courier', 'cancelledBy'])
+            ->where('team_id', $teamId)
             ->when($status !== 'todos', fn (Builder $query): Builder => $query->where('status', $status))
             ->when($status === OrderStatus::Finalized->value && $dateFrom !== null, fn (Builder $query): Builder => $query->where('finalized_at', '>=', $dateFrom->copy()->startOfDay()))
             ->when($status === OrderStatus::Finalized->value && $dateTo !== null, fn (Builder $query): Builder => $query->where('finalized_at', '<', $dateTo->copy()->addDay()->startOfDay()))
@@ -92,7 +97,7 @@ class OrderManagementController extends Controller
                 ])
                 ->put('todos', (int) $statusCounts->sum()),
             'couriers' => Courier::query()
-                ->where('team_id', $request->user()->current_team_id)
+                ->where('team_id', $teamId)
                 ->withCount(['orders as active_deliveries_count' => fn (Builder $query): Builder => $query
                     ->whereNotNull('dispatched_at')
                     ->whereNotIn('status', [OrderStatus::Finalized->value, OrderStatus::Cancelled->value])])

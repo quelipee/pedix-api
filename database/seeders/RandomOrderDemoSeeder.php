@@ -8,6 +8,8 @@ use App\Enums\PaymentMethod;
 use App\Models\Courier;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\Team;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -17,7 +19,10 @@ class RandomOrderDemoSeeder extends Seeder
 
     public function run(): void
     {
+        $teamId = Team::query()->value('id') ?? User::factory()->create()->current_team_id;
+
         $existingDemoOrders = Order::query()
+            ->where('team_id', $teamId)
             ->where('customer_name', 'like', 'Demo #%')
             ->count();
 
@@ -25,20 +30,20 @@ class RandomOrderDemoSeeder extends Seeder
             return;
         }
 
-        $products = Product::query()->where('active', true)->get();
+        $products = Product::query()->where('team_id', $teamId)->where('active', true)->get();
 
         if ($products->isEmpty()) {
             $this->call(ProductDemoSeeder::class);
-            $products = Product::query()->where('active', true)->get();
+            $products = Product::query()->where('team_id', $teamId)->where('active', true)->get();
         }
 
-        $courierIds = Courier::query()->where('active', true)->pluck('id');
+        $courierIds = Courier::query()->where('team_id', $teamId)->where('active', true)->pluck('id');
         $remaining = self::ORDER_COUNT - $existingDemoOrders;
         $modalities = $this->shuffledCases(OrderModality::cases(), $remaining);
         $paymentMethods = $this->shuffledCases(PaymentMethod::cases(), $remaining);
         $statuses = $this->shuffledCases(OrderStatus::cases(), $remaining);
 
-        DB::transaction(function () use ($products, $courierIds, $remaining, $existingDemoOrders, $modalities, $paymentMethods, $statuses): void {
+        DB::transaction(function () use ($products, $courierIds, $remaining, $existingDemoOrders, $modalities, $paymentMethods, $statuses, $teamId): void {
             for ($index = 0; $index < $remaining; $index++) {
                 $modality = $modalities[$index];
                 $status = $statuses[$index];
@@ -54,9 +59,14 @@ class RandomOrderDemoSeeder extends Seeder
                 }
 
                 $order = Order::factory()->create([
+                    'team_id' => $teamId,
                     'modality' => $modality,
                     'status' => $status,
                     'finalized_at' => $status === OrderStatus::Finalized ? $createdAt : null,
+                    'cancelled_at' => $status === OrderStatus::Cancelled ? $createdAt : null,
+                    'cancellation_reason' => $status === OrderStatus::Cancelled
+                        ? 'Cancelamento de demonstração'
+                        : null,
                     'payment_method' => $paymentMethods[$index],
                     'customer_name' => sprintf('Demo #%03d - %s', $existingDemoOrders + $index + 1, fake('pt_BR')->name()),
                     'customer_phone' => fake()->numerify('(11) 9####-####'),

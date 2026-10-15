@@ -72,9 +72,14 @@ function formatOrderDate(value: string | null): string {
                         Pedido cancelado
                     </p>
                     <p class="mt-1 text-muted-foreground">
-                        {{ order.cancellationReason || 'Motivo não informado.' }}
+                        {{
+                            order.cancellationReason || 'Motivo não informado.'
+                        }}
                     </p>
-                    <p v-if="order.cancelledBy" class="mt-2 text-xs text-muted-foreground">
+                    <p
+                        v-if="order.cancelledBy"
+                        class="mt-2 text-xs text-muted-foreground"
+                    >
                         Cancelado por {{ order.cancelledBy.name }}
                         <template v-if="order.cancelledAt">
                             · {{ formatOrderDate(order.cancelledAt) }}

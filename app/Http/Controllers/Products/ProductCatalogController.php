@@ -16,7 +16,12 @@ class ProductCatalogController extends Controller
      */
     public function __invoke(Request $request): Response
     {
-        $products = Product::query()->with('optionGroups.options')->orderBy('category')->orderBy('name')->get();
+        $products = Product::query()
+            ->with('optionGroups.options')
+            ->where('team_id', $request->user()->current_team_id)
+            ->orderBy('category')
+            ->orderBy('name')
+            ->get();
 
         return Inertia::render('products/Index', [
             'products' => ProductResource::collection($products)->response($request)->getData(true)['data'],

@@ -19,7 +19,7 @@ class CreateOrderPageController extends Controller
     {
         return Inertia::render('orders/Create', [
             'products' => ProductResource::collection(
-                Product::query()->with('optionGroups.options')->where('active', true)->orderBy('name')->get(),
+                Product::query()->with('optionGroups.options')->where('team_id', $request->user()->current_team_id)->where('active', true)->orderBy('name')->get(),
             )->resolve(),
             'customers' => CustomerResource::collection(
                 Customer::query()

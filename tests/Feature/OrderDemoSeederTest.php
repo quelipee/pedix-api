@@ -20,7 +20,7 @@ class OrderDemoSeederTest extends TestCase
     public function test_database_seeder_populates_dashboard_with_demo_orders_and_items(): void
     {
         $this->seed(DatabaseSeeder::class);
-        $user = User::factory()->create();
+        $user = User::query()->where('email', 'test@example.com')->firstOrFail();
 
         $response = $this
             ->actingAs($user)

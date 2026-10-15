@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Str;
 
+$isProduction = env('APP_ENV') === 'production';
+
 return [
 
     /*
@@ -47,7 +49,7 @@ return [
     |
     */
 
-    'encrypt' => env('SESSION_ENCRYPT', false),
+    'encrypt' => $isProduction || env('SESSION_ENCRYPT', false),
 
     /*
     |--------------------------------------------------------------------------
@@ -169,7 +171,7 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE'),
+    'secure' => $isProduction || env('SESSION_SECURE_COOKIE', false),
 
     /*
     |--------------------------------------------------------------------------

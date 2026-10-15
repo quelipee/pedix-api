@@ -9,7 +9,7 @@ class DispatchOrderRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->current_team_id !== null;
     }
 
     /** @return array<string, ValidationRule|array<mixed>|string> */

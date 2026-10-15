@@ -44,6 +44,7 @@ const props = defineProps<{
 }>();
 
 const page = usePage();
+const permissions = computed(() => page.props.permissions);
 const selectedOrder = ref<OrderDetails | null>(null);
 const dispatchingOrder = ref<OrderDetails | null>(null);
 const courierManagerOpen = ref(false);
@@ -76,6 +77,7 @@ const statusTabs: { value: StatusFilter; label: string }[] = [
     { value: 'em_preparo', label: 'Em preparo' },
     { value: 'pronto', label: 'Prontos' },
     { value: 'finalizado', label: 'Finalizados' },
+    { value: 'cancelado', label: 'Cancelados' },
 ];
 const periodTabs: { value: PeriodFilter; label: string }[] = [
     { value: 'today', label: 'Hoje' },
@@ -90,6 +92,8 @@ const statusClasses: Record<OrderStatus, string> = {
         'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300',
     pronto: 'bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300',
     finalizado: 'bg-muted text-muted-foreground',
+    cancelado:
+        'bg-rose-500/15 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300',
 };
 
 const nextStatusLabels: Record<OrderStatus, string> = {
@@ -97,6 +101,7 @@ const nextStatusLabels: Record<OrderStatus, string> = {
     em_preparo: 'Marcar pronto',
     pronto: 'Finalizar pedido',
     finalizado: '',
+    cancelado: '',
 };
 
 watch(
@@ -185,6 +190,7 @@ defineOptions({
 
     <OrderDetailsDialog :order="selectedOrder" @close="selectedOrder = null" />
     <CourierManagerDialog
+        v-if="permissions?.canManageCouriers"
         v-model:open="courierManagerOpen"
         :couriers="couriers"
     />
@@ -215,6 +221,7 @@ defineOptions({
                     </Link>
                 </Button>
                 <Button
+                    v-if="permissions?.canManageCouriers"
                     type="button"
                     variant="outline"
                     class="gap-2 rounded-xl"
@@ -420,7 +427,9 @@ defineOptions({
                                 formatOrderDate(
                                     order.status === 'finalizado'
                                         ? order.finalizedAt
-                                        : order.createdAt,
+                                        : order.status === 'cancelado'
+                                          ? order.cancelledAt
+                                          : order.createdAt,
                                 )
                             }}
                             ·
@@ -445,6 +454,7 @@ defineOptions({
                         <div class="flex flex-wrap justify-end gap-2">
                             <Button
                                 v-if="
+                                    permissions?.canDispatchOrder &&
                                     (order.status === 'em_preparo' ||
                                         order.status === 'pronto') &&
                                     order.modality === 'entrega'
@@ -464,6 +474,7 @@ defineOptions({
                             </Button>
                             <Button
                                 v-if="
+                                    permissions?.canUpdateOrderStatus &&
                                     order.nextStatus &&
                                     (order.status === 'novo' ||
                                         order.modality !== 'entrega' ||
@@ -488,7 +499,11 @@ defineOptions({
                             <span
                                 v-if="!order.nextStatus"
                                 class="self-center text-xs text-muted-foreground"
-                                >Concluído</span
+                                >{{
+                                    order.status === 'cancelado'
+                                        ? 'Cancelado'
+                                        : 'Concluído'
+                                }}</span
                             >
                         </div>
                     </div>

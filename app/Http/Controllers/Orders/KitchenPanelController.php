@@ -18,6 +18,9 @@ class KitchenPanelController extends Controller
 
     public function __invoke(Request $request): Response
     {
+        $teamId = $request->user()->current_team_id;
+        abort_if($teamId === null, 403);
+
         $statuses = [
             OrderStatus::New,
             OrderStatus::InPreparation,
@@ -25,6 +28,7 @@ class KitchenPanelController extends Controller
         ];
 
         $counts = Order::query()
+            ->where('team_id', $teamId)
             ->whereIn('status', $statuses)
             ->selectRaw('status, COUNT(*) as total')
             ->groupBy('status')
@@ -33,6 +37,7 @@ class KitchenPanelController extends Controller
         $columns = collect($statuses)->mapWithKeys(function (OrderStatus $status) use ($request): array {
             $orders = Order::query()
                 ->with(['items', 'courier', 'cancelledBy'])
+                ->where('team_id', $request->user()->current_team_id)
                 ->where('status', $status)
                 ->oldest('created_at')
                 ->oldest('id')
@@ -52,7 +57,7 @@ class KitchenPanelController extends Controller
                 $status->value => (int) $counts->get($status->value, 0),
             ]),
             'couriers' => Courier::query()
-                ->where('team_id', $request->user()->current_team_id)
+                ->where('team_id', $teamId)
                 ->withCount(['orders as active_deliveries_count' => fn (Builder $query): Builder => $query
                     ->whereNotNull('dispatched_at')
                     ->whereNotIn('status', [OrderStatus::Finalized->value, OrderStatus::Cancelled->value])])

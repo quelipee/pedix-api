@@ -8,13 +8,13 @@ use Illuminate\Support\Facades\DB;
 class CreateProduct
 {
     /** @param array<string, mixed> $attributes */
-    public function handle(array $attributes): Product
+    public function handle(int $teamId, array $attributes): Product
     {
-        return DB::transaction(function () use ($attributes): Product {
+        return DB::transaction(function () use ($teamId, $attributes): Product {
             $optionGroups = $attributes['option_groups'] ?? [];
             unset($attributes['option_groups']);
 
-            $product = Product::query()->create($attributes);
+            $product = Product::query()->create([...$attributes, 'team_id' => $teamId]);
             $this->createOptionGroups($product, $optionGroups);
 
             return $product->load('optionGroups.options');

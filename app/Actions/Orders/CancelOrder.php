@@ -9,10 +9,13 @@ use Illuminate\Validation\ValidationException;
 
 class CancelOrder
 {
-    public function handle(Order $order, int $userId, ?string $reason): Order
+    public function handle(Order $order, int $teamId, int $userId, ?string $reason): Order
     {
-        return DB::transaction(function () use ($order, $userId, $reason): Order {
-            $lockedOrder = Order::query()->lockForUpdate()->findOrFail($order->id);
+        return DB::transaction(function () use ($order, $teamId, $userId, $reason): Order {
+            $lockedOrder = Order::query()
+                ->where('team_id', $teamId)
+                ->lockForUpdate()
+                ->findOrFail($order->id);
 
             if ($lockedOrder->status === OrderStatus::Finalized) {
                 throw ValidationException::withMessages([

@@ -11,10 +11,13 @@ use Illuminate\Validation\ValidationException;
 
 class AdvanceOrderStatus
 {
-    public function handle(Order $order, string $status, ?CashRegister $cashRegister = null): Order
+    public function handle(Order $order, int $teamId, string $status, ?CashRegister $cashRegister = null): Order
     {
-        return DB::transaction(function () use ($order, $status, $cashRegister): Order {
-            $lockedOrder = Order::query()->lockForUpdate()->findOrFail($order->id);
+        return DB::transaction(function () use ($order, $teamId, $status, $cashRegister): Order {
+            $lockedOrder = Order::query()
+                ->where('team_id', $teamId)
+                ->lockForUpdate()
+                ->findOrFail($order->id);
             $currentStatus = $lockedOrder->status;
             $nextStatus = $currentStatus->next();
             $requestedStatus = OrderStatus::from($status);

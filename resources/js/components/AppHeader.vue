@@ -45,6 +45,7 @@ withDefaults(
 
 const page = usePage();
 const user = computed(() => page.props.auth.user);
+const permissions = computed(() => page.props.permissions);
 const dashboardUrl = computed(() =>
     page.props.currentTeam ? dashboard(page.props.currentTeam.slug).url : '/',
 );
@@ -106,6 +107,7 @@ const firstName = computed(() => user.value.name.split(' ')[0]);
                 class="flex flex-1 items-center gap-2"
             >
                 <Link
+                    v-if="permissions?.canViewDashboard"
                     :href="dashboardUrl"
                     aria-label="Visão geral"
                     class="inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-medium transition-colors"
@@ -120,6 +122,7 @@ const firstName = computed(() => user.value.name.split(' ')[0]);
                     <span class="hidden sm:inline">Visão geral</span>
                 </Link>
                 <Link
+                    v-if="permissions?.canViewOrders"
                     :href="ordersUrl"
                     aria-label="Gerenciar pedidos"
                     class="inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-medium transition-colors"
@@ -134,6 +137,7 @@ const firstName = computed(() => user.value.name.split(' ')[0]);
                     <span class="hidden sm:inline">Pedidos</span>
                 </Link>
                 <Link
+                    v-if="permissions?.canViewProducts"
                     :href="productsUrl"
                     aria-label="Cardápio"
                     class="inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-medium transition-colors"
@@ -148,6 +152,7 @@ const firstName = computed(() => user.value.name.split(' ')[0]);
                     <span class="hidden sm:inline">Cardápio</span>
                 </Link>
                 <Link
+                    v-if="permissions?.canViewCustomers"
                     :href="customersUrl"
                     aria-label="Clientes"
                     class="inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-medium transition-colors"
@@ -162,6 +167,7 @@ const firstName = computed(() => user.value.name.split(' ')[0]);
                     <span class="hidden lg:inline">Clientes</span>
                 </Link>
                 <Link
+                    v-if="permissions?.canViewReports"
                     :href="reportsUrl"
                     aria-label="Relatórios"
                     class="inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-medium transition-colors"
@@ -175,6 +181,7 @@ const firstName = computed(() => user.value.name.split(' ')[0]);
                     <span class="hidden xl:inline">Relatórios</span>
                 </Link>
                 <Link
+                    v-if="permissions?.canViewCashRegister"
                     :href="cashRegisterUrl"
                     aria-label="Caixa"
                     class="inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-medium transition-colors"
@@ -188,7 +195,7 @@ const firstName = computed(() => user.value.name.split(' ')[0]);
                     <span class="hidden md:inline">Caixa</span>
                 </Link>
                 <CreateOrderCard
-                    v-if="showCreateOrder"
+                    v-if="showCreateOrder && permissions?.canCreateOrder"
                     :products="products ?? []"
                 />
             </nav>

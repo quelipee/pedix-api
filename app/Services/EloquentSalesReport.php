@@ -18,6 +18,7 @@ class EloquentSalesReport implements SalesReport
     {
         $orders = Order::query()
             ->with('items')
+            ->where('team_id', $teamId)
             ->where('status', OrderStatus::Finalized)
             ->whereBetween('finalized_at', [$from, $to])
             ->orderBy('finalized_at')

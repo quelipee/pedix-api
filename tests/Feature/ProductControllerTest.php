@@ -50,6 +50,7 @@ class ProductControllerTest extends TestCase
             ->assertJsonPath('data.category', 'Bebidas');
 
         $this->assertDatabaseHas('products', [
+            'team_id' => $user->current_team_id,
             'name' => 'Suco natural',
             'category' => 'Bebidas',
             'price' => '8.50',
@@ -273,5 +274,42 @@ class ProductControllerTest extends TestCase
         $this->assertModelExists($group);
         $this->assertModelExists($option);
         $this->assertDatabaseHas('products', ['id' => $product->id, 'active' => false]);
+    }
+
+    public function test_products_are_isolated_between_teams(): void
+    {
+        $user = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $ownProduct = Product::factory()->create([
+            'team_id' => $user->current_team_id,
+            'name' => 'Produto da equipe',
+        ]);
+        $otherProduct = Product::factory()->create([
+            'team_id' => $otherUser->current_team_id,
+            'name' => 'Produto de outra equipe',
+        ]);
+
+        $this->actingAs($user)->getJson(route('products.index'))
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $ownProduct->id);
+
+        $payload = [
+            'name' => 'Alteração indevida',
+            'category' => 'Outros',
+            'price' => '10.00',
+            'active' => true,
+        ];
+
+        $this->actingAs($user)->patchJson(route('products.update', $otherProduct), $payload)->assertNotFound();
+        $this->actingAs($user)->deleteJson(route('products.destroy', $otherProduct))->assertNotFound();
+        $this->actingAs($user)->get(route('products.edit', ['product' => $otherProduct]))->assertNotFound();
+
+        $this->assertDatabaseHas('products', [
+            'id' => $otherProduct->id,
+            'team_id' => $otherUser->current_team_id,
+            'name' => 'Produto de outra equipe',
+            'deleted_at' => null,
+        ]);
     }
 }

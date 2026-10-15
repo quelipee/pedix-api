@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useHttp } from '@inertiajs/vue3';
 import { Ban } from '@lucide/vue';
-import { watch } from 'vue';
+import { computed, watch } from 'vue';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -17,6 +17,9 @@ import type { OrderDetails } from '@/types/orders';
 const props = defineProps<{ order: OrderDetails | null }>();
 const emit = defineEmits<{ close: []; cancelled: [] }>();
 const form = useHttp<{ reason: string }>({ reason: '' });
+const orderError = computed(
+    () => (form.errors as Record<string, string | undefined>).order,
+);
 
 watch(
     () => props.order?.id,
@@ -52,7 +55,9 @@ function submit(): void {
 
             <form class="space-y-5" @submit.prevent="submit">
                 <div class="grid gap-2">
-                    <Label for="cancellation-reason">Motivo do cancelamento</Label>
+                    <Label for="cancellation-reason"
+                        >Motivo do cancelamento</Label
+                    >
                     <textarea
                         id="cancellation-reason"
                         v-model="form.reason"
@@ -64,21 +69,38 @@ function submit(): void {
                     <p class="text-xs text-muted-foreground">
                         {{ form.reason.length }}/500 caracteres
                     </p>
-                    <p v-if="form.errors.reason" class="text-sm text-destructive">
+                    <p
+                        v-if="form.errors.reason"
+                        class="text-sm text-destructive"
+                    >
                         {{ form.errors.reason }}
                     </p>
-                    <p v-if="form.errors.order" class="text-sm text-destructive">
-                        {{ form.errors.order }}
+                    <p v-if="orderError" class="text-sm text-destructive">
+                        {{ orderError }}
                     </p>
                 </div>
 
                 <div class="flex justify-end gap-3 border-t pt-4">
-                    <Button type="button" variant="outline" :disabled="form.processing" @click="emit('close')">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        :disabled="form.processing"
+                        @click="emit('close')"
+                    >
                         Voltar
                     </Button>
-                    <Button type="submit" variant="destructive" class="gap-2" :disabled="form.processing">
+                    <Button
+                        type="submit"
+                        variant="destructive"
+                        class="gap-2"
+                        :disabled="form.processing"
+                    >
                         <Ban class="size-4" />
-                        {{ form.processing ? 'Cancelando...' : 'Confirmar cancelamento' }}
+                        {{
+                            form.processing
+                                ? 'Cancelando...'
+                                : 'Confirmar cancelamento'
+                        }}
                     </Button>
                 </div>
             </form>

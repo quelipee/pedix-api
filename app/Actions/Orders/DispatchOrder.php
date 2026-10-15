@@ -14,7 +14,10 @@ class DispatchOrder
     public function handle(Order $order, Courier $courier, int $teamId): Order
     {
         return DB::transaction(function () use ($order, $courier, $teamId): Order {
-            $lockedOrder = Order::query()->lockForUpdate()->findOrFail($order->id);
+            $lockedOrder = Order::query()
+                ->where('team_id', $teamId)
+                ->lockForUpdate()
+                ->findOrFail($order->id);
             $lockedCourier = Courier::query()->lockForUpdate()->findOrFail($courier->id);
 
             if (
