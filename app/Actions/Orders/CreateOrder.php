@@ -32,6 +32,7 @@ class CreateOrder
         ?array $deliveryAddress,
         ?string $deliveryFee,
         array $items,
+        bool $isOnline = false,
     ): Order {
         return DB::transaction(function () use (
             $teamId,
@@ -45,6 +46,7 @@ class CreateOrder
             $deliveryAddress,
             $deliveryFee,
             $items,
+            $isOnline,
         ): Order {
             $products = Product::query()
                 ->with('optionGroups.options')
@@ -91,6 +93,7 @@ class CreateOrder
                 $customerName,
                 $customerPhone,
                 $modality === OrderModality::Delivery->value ? $deliveryAddress : null,
+                updateExisting: ! $isOnline,
             );
 
             $order = Order::query()->create([
@@ -107,6 +110,9 @@ class CreateOrder
                     : null,
                 'status' => OrderStatus::New,
             ]);
+            if ($isOnline) {
+                $order->forceFill(['is_online' => true])->save();
+            }
             foreach ($items as $index => $item) {
                 $product = $products->get($item['product_id']);
                 $selectedOptions = $selectedOptionsByItem->get($index);

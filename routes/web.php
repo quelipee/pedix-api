@@ -23,6 +23,8 @@ use App\Http\Controllers\Products\EditProductPageController;
 use App\Http\Controllers\Products\ProductCatalogController;
 use App\Http\Controllers\Products\ProductCategoryController;
 use App\Http\Controllers\Products\ProductController;
+use App\Http\Controllers\PublicMenu\PublicMenuController;
+use App\Http\Controllers\PublicMenu\PublicMenuSettingsController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Teams\StoreStatusController;
 use App\Http\Controllers\Teams\TeamInvitationController;
@@ -34,6 +36,9 @@ use App\Http\Middleware\EnsureTeamPermission;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
+
+Route::get('cardapio/{store:slug}', [PublicMenuController::class, 'show'])->middleware('throttle:60,1')->name('public-menu.show');
+Route::post('cardapio/{store:slug}/pedidos', [PublicMenuController::class, 'store'])->middleware('throttle:6,1')->block(10, 10)->name('public-menu.store');
 
 Route::post('stripe/webhook', [StripeWebhookController::class, 'handleWebhook'])
     ->middleware(EnsureStripeWebhookConfigured::class)
@@ -50,6 +55,10 @@ Route::prefix('{current_team}')
         EnsureActiveSubscription::class,
     ]))
     ->group(function () {
+        Route::patch('online-menu', PublicMenuSettingsController::class)
+            ->middleware(EnsureTeamPermission::class.':'.TeamPermission::ManageProducts->value)
+            ->name('online-menu.update');
+
         Route::inertia('billing/required', 'billing/Required')->name('billing.required');
 
         Route::patch('store-status', StoreStatusController::class)

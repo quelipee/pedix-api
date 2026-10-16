@@ -8,6 +8,7 @@ enum PaymentMethod: string
     case Pix = 'pix';
     case Debit = 'debito';
     case Credit = 'credito';
+    case Card = 'cartao';
 
     public function label(): string
     {
@@ -16,6 +17,7 @@ enum PaymentMethod: string
             self::Pix => 'Pix',
             self::Debit => 'Débito',
             self::Credit => 'Crédito',
+            self::Card => 'Cartão',
         };
     }
 }

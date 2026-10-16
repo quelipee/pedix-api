@@ -20,6 +20,8 @@ use Illuminate\Support\Carbon;
  * @property int $team_id
  * @property int $number
  * @property int $numbering_cycle
+ * @property bool $is_online
+ * @property string|null $public_order_token
  * @property int|null $customer_id
  * @property OrderModality $modality
  * @property string|null $customer_name
@@ -48,12 +50,17 @@ class Order extends Model
     /** @use HasFactory<OrderFactory> */
     use HasFactory;
 
+    protected $attributes = ['is_online' => false];
+
+    protected $hidden = ['public_order_token'];
+
     protected $fillable = ['team_id', 'customer_id', 'modality', 'customer_name', 'customer_phone', 'delivery_address', 'delivery_fee', 'courier_id', 'cash_register_id', 'dispatched_at', 'status', 'finalized_at', 'cancelled_at', 'cancelled_by', 'cancellation_reason', 'payment_method', 'change_for', 'product_id', 'product_name', 'unit_price', 'quantity', 'notes', 'selected_options'];
 
     protected function casts(): array
     {
         return [
             'number' => 'integer',
+            'is_online' => 'boolean',
             'numbering_cycle' => 'integer',
             'modality' => OrderModality::class,
             'status' => OrderStatus::class,

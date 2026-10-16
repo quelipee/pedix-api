@@ -318,6 +318,11 @@ defineOptions({
                             >
                                 <span class="text-base font-semibold">
                                     Pedido #{{ order.number }}
+                                    <span
+                                        v-if="order.isOnline"
+                                        class="ml-2 rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
+                                        >Online</span
+                                    >
                                 </span>
                                 <span
                                     class="mt-0.5 block text-sm text-muted-foreground"

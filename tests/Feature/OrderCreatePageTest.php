@@ -36,7 +36,7 @@ class OrderCreatePageTest extends TestCase
             ->where('products.0.description', 'Hambúrguer com bacon crocante.')
             ->where('products.0.ingredients.2', 'Bacon')
             ->has('modalities', 3)
-            ->has('paymentMethods', 4)
+            ->has('paymentMethods', 5)
             ->has('customers', 1)
             ->where('customers.0.id', $customer->id));
     }

@@ -24,6 +24,7 @@ use Laravel\Cashier\Subscription;
  * @property bool $is_open
  * @property int $order_cycle
  * @property int $next_order_number
+ * @property string|null $online_delivery_fee
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
@@ -215,6 +216,7 @@ class Team extends Model
         return [
             'is_personal' => 'boolean',
             'is_open' => 'boolean',
+            'online_delivery_fee' => 'decimal:2',
             'order_cycle' => 'integer',
             'next_order_number' => 'integer',
             'trial_ends_at' => 'datetime',

@@ -3,6 +3,7 @@ import { Head, Link, router, useHttp, usePage } from '@inertiajs/vue3';
 import { ArrowUpRight, PackageOpen, Plus, Search } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import ProductCategoryDialog from '@/components/products/ProductCategoryDialog.vue';
+import PublicMenuLinkDialog from '@/components/products/PublicMenuLinkDialog.vue';
 import { Button } from '@/components/ui/button';
 import PageHeader from '@/components/workspace/PageHeader.vue';
 import { categoryIcon } from '@/lib/productCategories';
@@ -36,6 +37,7 @@ type ProductCategory = { id: number; name: string };
 const props = defineProps<{
     products: Product[];
     categories: ProductCategory[];
+    onlineDeliveryFee: string | null;
 }>();
 
 const page = usePage();
@@ -176,6 +178,11 @@ defineOptions({
                     Novo item
                 </Link>
             </div>
+            <PublicMenuLinkDialog
+                v-if="currentTeam && page.props.permissions?.canManageProducts"
+                :slug="currentTeam.slug"
+                :delivery-fee="onlineDeliveryFee"
+            />
         </PageHeader>
 
         <div

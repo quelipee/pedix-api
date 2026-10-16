@@ -14,6 +14,7 @@ class ResolveOrderCustomer
         ?string $name,
         ?string $phone,
         ?array $address,
+        bool $updateExisting = true,
     ): ?Customer {
         if ($customerId !== null) {
             return Customer::query()
@@ -38,6 +39,10 @@ class ResolveOrderCustomer
                 'address' => $address,
             ],
         );
+
+        if (! $updateExisting && ! $customer->wasRecentlyCreated) {
+            return $customer;
+        }
 
         if (filled($name)) {
             $customer->name = trim((string) $name);

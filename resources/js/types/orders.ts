@@ -8,6 +8,7 @@ export type OrderStatus =
 export type OrderDetails = {
     id: number;
     number: number;
+    isOnline?: boolean;
     customerId: number | null;
     modality: 'local' | 'retirada' | 'entrega';
     modalityLabel: string;

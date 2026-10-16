@@ -33,7 +33,7 @@ class OrderControllerTest extends TestCase
             ->assertJsonCount(1, 'products')
             ->assertJsonPath('products.0.id', $product->id)
             ->assertJsonPath('products.0.name', 'X-Salada')
-            ->assertJsonCount(4, 'paymentMethods')
+            ->assertJsonCount(5, 'paymentMethods')
             ->assertJsonCount(0, 'data');
     }
 

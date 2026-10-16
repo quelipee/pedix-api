@@ -25,6 +25,7 @@ class ProductCatalogController extends Controller
             ->get();
 
         return Inertia::render('products/Index', [
+            'onlineDeliveryFee' => $request->user()->currentTeam->online_delivery_fee,
             'products' => ProductResource::collection($products)->response($request)->getData(true)['data'],
             'categories' => ProductCategory::query()
                 ->where('team_id', $request->user()->current_team_id)

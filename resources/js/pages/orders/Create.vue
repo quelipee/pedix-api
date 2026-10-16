@@ -35,7 +35,7 @@ type Product = {
 };
 
 type OrderModality = 'local' | 'retirada' | 'entrega';
-type PaymentMethod = 'dinheiro' | 'pix' | 'debito' | 'credito';
+type PaymentMethod = 'dinheiro' | 'pix' | 'debito' | 'credito' | 'cartao';
 
 type DeliveryAddress = {
     postal_code: string;
@@ -152,7 +152,7 @@ function restoreDraft(): void {
 
         if (
             draft.payment_method &&
-            ['dinheiro', 'pix', 'debito', 'credito'].includes(
+            ['dinheiro', 'pix', 'debito', 'credito', 'cartao'].includes(
                 draft.payment_method,
             )
         ) {
