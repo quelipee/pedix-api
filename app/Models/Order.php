@@ -5,7 +5,9 @@ namespace App\Models;
 use App\Enums\OrderModality;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
+use App\Observers\OrderObserver;
 use Database\Factories\OrderFactory;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,6 +18,8 @@ use Illuminate\Support\Carbon;
 /**
  * @property int $id
  * @property int $team_id
+ * @property int $number
+ * @property int $numbering_cycle
  * @property int|null $customer_id
  * @property OrderModality $modality
  * @property string|null $customer_name
@@ -38,6 +42,7 @@ use Illuminate\Support\Carbon;
  * @property-read Customer|null $customer
  * @property-read User|null $cancelledBy
  */
+#[ObservedBy(OrderObserver::class)]
 class Order extends Model
 {
     /** @use HasFactory<OrderFactory> */
@@ -48,6 +53,8 @@ class Order extends Model
     protected function casts(): array
     {
         return [
+            'number' => 'integer',
+            'numbering_cycle' => 'integer',
             'modality' => OrderModality::class,
             'status' => OrderStatus::class,
             'finalized_at' => 'datetime',

@@ -66,7 +66,7 @@ function commandUrl(orderId: number): string {
     <Dialog :open="order !== null" @update:open="handleOpenChange">
         <DialogContent class="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
             <DialogHeader>
-                <DialogTitle>Pedido #{{ order?.id }}</DialogTitle>
+                <DialogTitle>Pedido #{{ order?.number }}</DialogTitle>
                 <DialogDescription
                     >Detalhes do pedido registrado em
                     {{

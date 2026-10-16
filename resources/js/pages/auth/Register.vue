@@ -61,12 +61,42 @@ defineOptions({
             </div>
 
             <div class="grid gap-2">
+                <Label for="delivery_name">Nome do delivery</Label>
+                <Input
+                    id="delivery_name"
+                    type="text"
+                    required
+                    maxlength="255"
+                    :tabindex="2"
+                    autocomplete="organization"
+                    name="delivery_name"
+                    placeholder="Ex.: Pedix Lanches"
+                    :aria-invalid="Boolean(errors.delivery_name)"
+                    :aria-describedby="
+                        errors.delivery_name
+                            ? 'register-delivery-name-error'
+                            : 'register-delivery-name-hint'
+                    "
+                />
+                <InputError
+                    id="register-delivery-name-error"
+                    :message="errors.delivery_name"
+                />
+                <p
+                    id="register-delivery-name-hint"
+                    class="text-xs leading-5 text-muted-foreground"
+                >
+                    Esse nome aparecerá no seu estabelecimento dentro do Pedix.
+                </p>
+            </div>
+
+            <div class="grid gap-2">
                 <Label for="email">E-mail</Label>
                 <Input
                     id="email"
                     type="email"
                     required
-                    :tabindex="2"
+                    :tabindex="3"
                     autocomplete="email"
                     name="email"
                     placeholder="voce@exemplo.com"
@@ -85,7 +115,7 @@ defineOptions({
                 <PasswordInput
                     id="password"
                     required
-                    :tabindex="3"
+                    :tabindex="4"
                     autocomplete="new-password"
                     name="password"
                     placeholder="Use uma senha forte"
@@ -115,7 +145,7 @@ defineOptions({
                 <PasswordInput
                     id="password_confirmation"
                     required
-                    :tabindex="4"
+                    :tabindex="5"
                     autocomplete="new-password"
                     name="password_confirmation"
                     placeholder="Digite a senha novamente"
@@ -136,7 +166,7 @@ defineOptions({
             <Button
                 type="submit"
                 class="mt-1 h-11 w-full rounded-xl bg-[#24533f] text-white hover:bg-[#1b4432]"
-                tabindex="5"
+                tabindex="6"
                 :disabled="processing"
                 data-test="register-user-button"
             >
@@ -160,7 +190,7 @@ defineOptions({
                         : login()
                 "
                 class="font-medium text-[#356b52] underline-offset-4 hover:underline dark:text-emerald-300"
-                :tabindex="6"
+                :tabindex="7"
                 data-test="team-invitation-login-link"
             >
                 Entrar

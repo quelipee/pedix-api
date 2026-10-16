@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Billing\BuildSubscriptionNotice;
 use App\Enums\OrderStatus;
+use App\Enums\TeamPermission;
 use App\Http\Resources\ProductResource;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -14,7 +16,7 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function __invoke(Request $request): Response
+    public function __invoke(Request $request, BuildSubscriptionNotice $buildSubscriptionNotice): Response
     {
         $teamId = $request->user()->current_team_id;
         abort_if($teamId === null, 403);
@@ -41,9 +43,10 @@ class DashboardController extends Controller
             ->where('team_id', $teamId)
             ->latest('created_at')
             ->limit(5)
-            ->get(['id', 'customer_name', 'customer_phone', 'payment_method', 'change_for', 'delivery_address', 'delivery_fee', 'courier_id', 'dispatched_at', 'modality', 'status', 'created_at'])
+            ->get(['id', 'number', 'customer_name', 'customer_phone', 'payment_method', 'change_for', 'delivery_address', 'delivery_fee', 'courier_id', 'dispatched_at', 'modality', 'status', 'created_at'])
             ->map(fn (Order $order): array => [
                 'id' => $order->id,
+                'number' => $order->number,
                 'modality' => $order->modality->value,
                 'customerName' => $order->customer_name,
                 'customerPhone' => $order->customer_phone,
@@ -101,6 +104,9 @@ class DashboardController extends Controller
             ]);
 
         return Inertia::render('Dashboard', [
+            'subscriptionNotice' => $request->user()->hasTeamPermission($request->user()->currentTeam, TeamPermission::ManageBilling)
+                ? $buildSubscriptionNotice->handle($request->user()->currentTeam)
+                : null,
             'stats' => [
                 'todayOrders' => $orderCountsByStatus->sum(),
                 'newOrders' => $orderCountsByStatus->get(OrderStatus::New->value),

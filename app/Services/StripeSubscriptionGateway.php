@@ -15,6 +15,11 @@ class StripeSubscriptionGateway implements SubscriptionGateway
 {
     public function __construct(private readonly StripeClient $stripe) {}
 
+    public function subscriptionSnapshot(string $subscriptionId): array
+    {
+        return $this->stripe->subscriptions->retrieve($subscriptionId)->toArray();
+    }
+
     public function createCheckout(Team $team, BillingPlan $plan, int $trialDays): SubscriptionCheckout
     {
         $priceId = config('billing.plans.'.$plan->value.'.price_id');
@@ -52,7 +57,15 @@ class StripeSubscriptionGateway implements SubscriptionGateway
         }
 
         $session = $this->stripe->checkout->sessions->create([
+            'ui_mode' => 'hosted_page',
             'mode' => 'subscription',
+            'billing_address_collection' => 'auto',
+            'phone_number_collection' => ['enabled' => false],
+            'automatic_tax' => ['enabled' => false],
+            'allow_promotion_codes' => false,
+            'submit_type' => 'auto',
+            'integration_identifier' => 'hosted_web_0003',
+            'origin_context' => 'web',
             'customer' => $team->stripe_id,
             'client_reference_id' => (string) $team->id,
             'line_items' => [['price' => $priceId, 'quantity' => 1]],

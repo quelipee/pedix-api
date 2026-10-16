@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Contracts\SubscriptionGateway;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
@@ -10,6 +11,16 @@ use Tests\TestCase;
 class StripeWebhookTest extends TestCase
 {
     use RefreshDatabase;
+
+    /** @var array<string, mixed> */
+    private array $stripeSnapshot = [];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->mock(SubscriptionGateway::class)->shouldReceive('subscriptionSnapshot')
+            ->andReturnUsing(fn (): array => $this->stripeSnapshot);
+    }
 
     public function test_webhook_is_disabled_when_the_signing_secret_is_missing(): void
     {
@@ -64,6 +75,45 @@ class StripeWebhookTest extends TestCase
         $this->assertFalse($owner->currentTeam->fresh()->subscribed());
     }
 
+    public function test_subscription_period_is_synced_from_item_events_and_can_renew(): void
+    {
+        config(['cashier.webhook.secret' => 'whsec_example']);
+        $owner = User::factory()->create();
+        $owner->currentTeam->forceFill(['stripe_id' => 'cus_pedix'])->save();
+        $payload = $this->subscriptionEvent();
+        $end = now()->addMonth()->startOfSecond();
+        $payload['data']['object']['items']['data'][0]['current_period_end'] = $end->timestamp;
+        $this->signedWebhook($payload)->assertOk();
+        $this->assertDatabaseHas('subscriptions', ['stripe_id' => 'sub_pedix', 'current_period_ends_at' => $end->format('Y-m-d H:i:s')]);
+
+        $end = $end->addMonth();
+        $payload['type'] = 'customer.subscription.updated';
+        $payload['id'] = 'evt_renewed';
+        $payload['data']['object']['items']['data'][0]['current_period_end'] = $end->timestamp;
+        $this->signedWebhook($payload)->assertOk();
+        $this->signedWebhook($payload)->assertOk();
+        $this->assertDatabaseHas('subscriptions', ['stripe_id' => 'sub_pedix', 'current_period_ends_at' => $end->format('Y-m-d H:i:s')]);
+        $this->assertDatabaseCount('subscriptions', 1);
+    }
+
+    public function test_subscription_period_accepts_legacy_payload_and_keeps_date_when_absent(): void
+    {
+        config(['cashier.webhook.secret' => 'whsec_example']);
+        $owner = User::factory()->create();
+        $owner->currentTeam->forceFill(['stripe_id' => 'cus_pedix'])->save();
+        $payload = $this->subscriptionEvent();
+        $end = now()->addMonth()->startOfSecond();
+        $payload['data']['object']['current_period_end'] = $end->timestamp;
+        $this->signedWebhook($payload)->assertOk();
+        $this->assertDatabaseHas('subscriptions', ['stripe_id' => 'sub_pedix', 'current_period_ends_at' => $end->format('Y-m-d H:i:s')]);
+
+        unset($payload['data']['object']['current_period_end']);
+        $payload['type'] = 'customer.subscription.updated';
+        $payload['id'] = 'evt_legacy_updated';
+        $this->signedWebhook($payload)->assertOk();
+        $this->assertDatabaseHas('subscriptions', ['stripe_id' => 'sub_pedix', 'current_period_ends_at' => $end->format('Y-m-d H:i:s')]);
+    }
+
     /** @return array<string, mixed> */
     private function subscriptionEvent(): array
     {
@@ -84,6 +134,13 @@ class StripeWebhookTest extends TestCase
     /** @param array<string, mixed> $payload */
     private function signedWebhook(array $payload, string $secret = 'whsec_example'): TestResponse
     {
+        $this->stripeSnapshot = array_replace($this->stripeSnapshot, $payload['data']['object']);
+        if ($payload['type'] === 'customer.subscription.deleted') {
+            $this->stripeSnapshot['status'] = 'canceled';
+            $this->stripeSnapshot['trial_end'] = null;
+            $this->stripeSnapshot['canceled_at'] = time();
+        }
+
         $content = json_encode($payload, JSON_THROW_ON_ERROR);
         $timestamp = time();
         $signature = hash_hmac('sha256', $timestamp.'.'.$content, $secret);

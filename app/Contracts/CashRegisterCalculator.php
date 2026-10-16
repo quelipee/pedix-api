@@ -3,6 +3,7 @@
 namespace App\Contracts;
 
 use App\Enums\CashMovementType;
+use App\Enums\PaymentMethod;
 use App\Models\CashRegister;
 
 interface CashRegisterCalculator
@@ -12,7 +13,9 @@ interface CashRegisterCalculator
 
     public function totalSales(CashRegister $cashRegister): string;
 
-    public function movementTotal(CashRegister $cashRegister, CashMovementType $type): string;
+    public function movementTotal(CashRegister $cashRegister, CashMovementType $type, ?PaymentMethod $paymentMethod = null): string;
+
+    public function netPix(CashRegister $cashRegister): string;
 
     public function expectedCash(CashRegister $cashRegister): string;
 

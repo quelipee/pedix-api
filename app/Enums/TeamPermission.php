@@ -25,6 +25,7 @@ enum TeamPermission: string
     case ManageBilling = 'billing:manage';
 
     case UpdateTeam = 'team:update';
+    case ManageStoreStatus = 'store:manage-status';
     case DeleteTeam = 'team:delete';
 
     case AddMember = 'member:add';

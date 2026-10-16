@@ -2,6 +2,7 @@
 
 use App\Enums\TeamPermission;
 use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\Billing\StripeWebhookController;
 use App\Http\Controllers\Billing\SubscriptionController;
 use App\Http\Controllers\Billing\SubscriptionPageController;
 use App\Http\Controllers\CashRegisters\CashRegisterController;
@@ -23,17 +24,18 @@ use App\Http\Controllers\Products\ProductCatalogController;
 use App\Http\Controllers\Products\ProductCategoryController;
 use App\Http\Controllers\Products\ProductController;
 use App\Http\Controllers\Reports\ReportController;
+use App\Http\Controllers\Teams\StoreStatusController;
 use App\Http\Controllers\Teams\TeamInvitationController;
+use App\Http\Middleware\EnsureActiveSubscription;
 use App\Http\Middleware\EnsureStripeBillingConfigured;
 use App\Http\Middleware\EnsureStripeWebhookConfigured;
 use App\Http\Middleware\EnsureTeamMembership;
 use App\Http\Middleware\EnsureTeamPermission;
 use Illuminate\Support\Facades\Route;
-use Laravel\Cashier\Http\Controllers\WebhookController;
 
 Route::inertia('/', 'Welcome')->name('home');
 
-Route::post('stripe/webhook', [WebhookController::class, 'handleWebhook'])
+Route::post('stripe/webhook', [StripeWebhookController::class, 'handleWebhook'])
     ->middleware(EnsureStripeWebhookConfigured::class)
     ->name('cashier.webhook');
 
@@ -45,8 +47,15 @@ Route::prefix('{current_team}')
         'auth',
         config('auth.require_email_verification') ? 'verified' : null,
         EnsureTeamMembership::class,
+        EnsureActiveSubscription::class,
     ]))
     ->group(function () {
+        Route::inertia('billing/required', 'billing/Required')->name('billing.required');
+
+        Route::patch('store-status', StoreStatusController::class)
+            ->middleware(EnsureTeamPermission::class.':'.TeamPermission::ManageStoreStatus->value)
+            ->name('store-status.update');
+
         Route::middleware(EnsureTeamPermission::class.':'.TeamPermission::ManageBilling->value)->group(function (): void {
             Route::get('billing', SubscriptionPageController::class)->name('billing.index');
             Route::middleware([EnsureStripeBillingConfigured::class, 'throttle:6,1'])->group(function (): void {
@@ -102,6 +111,7 @@ Route::prefix('api/v1')
         config('auth.require_email_verification') ? 'verified' : null,
         EnsureTeamMembership::class,
         'throttle:120,1',
+        EnsureActiveSubscription::class,
     ]))
     ->group(function () {
         Route::get('products', [ProductController::class, 'index'])->middleware(EnsureTeamPermission::class.':'.TeamPermission::ViewProducts->value)->name('products.index');

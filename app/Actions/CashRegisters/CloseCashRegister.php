@@ -5,6 +5,7 @@ namespace App\Actions\CashRegisters;
 use App\Contracts\CashRegisterCalculator;
 use App\Models\CashRegister;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 class CloseCashRegister
@@ -21,12 +22,19 @@ class CloseCashRegister
             }
 
             $expectedCash = $this->calculator->expectedCash($lockedRegister);
+            $difference = $this->calculator->difference($closingBalance, $expectedCash);
+            if (Validator::make(
+                ['expected_cash' => $expectedCash, 'difference' => $difference],
+                ['expected_cash' => 'numeric|between:-99999999.99,99999999.99', 'difference' => 'numeric|between:-99999999.99,99999999.99'],
+            )->fails()) {
+                throw ValidationException::withMessages(['closing_balance' => 'O saldo esperado ou a diferença ultrapassa o limite permitido para o fechamento.']);
+            }
 
             $lockedRegister->update([
                 'closed_by' => $userId,
                 'closing_balance' => $closingBalance,
                 'expected_cash' => $expectedCash,
-                'difference' => $this->calculator->difference($closingBalance, $expectedCash),
+                'difference' => $difference,
                 'closed_at' => now(),
             ]);
 

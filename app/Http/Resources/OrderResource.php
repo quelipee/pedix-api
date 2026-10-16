@@ -18,6 +18,7 @@ class OrderResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'number' => $this->number,
             'customerId' => $this->customer_id,
             'modality' => $this->modality->value,
             'modalityLabel' => $this->modality->label(),

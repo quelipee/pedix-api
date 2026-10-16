@@ -41,6 +41,7 @@ enum TeamRole: string
                 TeamPermission::ManageCashRegister,
                 TeamPermission::ViewReports,
                 TeamPermission::UpdateTeam,
+                TeamPermission::ManageStoreStatus,
                 TeamPermission::CreateInvitation,
                 TeamPermission::CancelInvitation,
             ],

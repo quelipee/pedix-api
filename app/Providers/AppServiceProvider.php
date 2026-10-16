@@ -12,6 +12,7 @@ use App\Services\EloquentCashRegisterCalculator;
 use App\Services\EloquentSalesReport;
 use App\Services\StripeSubscriptionGateway;
 use Carbon\CarbonImmutable;
+use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
@@ -30,7 +31,13 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(OrderCommandFormatter::class, DefaultOrderCommandFormatter::class);
         $this->app->bind(SalesReport::class, EloquentSalesReport::class);
         $this->app->bind(SubscriptionGateway::class, StripeSubscriptionGateway::class);
-        $this->app->singleton(StripeClient::class, fn (): StripeClient => Cashier::stripe());
+        $this->app->singleton(StripeClient::class, fn (Application $app, array $parameters): StripeClient => new StripeClient(
+            $parameters['config'] ?? [
+                'api_key' => config('cashier.secret'),
+                'stripe_version' => Cashier::STRIPE_VERSION,
+                'api_base' => Cashier::$apiBaseUrl,
+            ],
+        ));
 
         Cashier::ignoreRoutes();
     }

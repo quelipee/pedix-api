@@ -11,13 +11,14 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonPeriod;
+use Illuminate\Database\Eloquent\Collection;
 
 class EloquentSalesReport implements SalesReport
 {
     public function generate(int $teamId, CarbonImmutable $from, CarbonImmutable $to): array
     {
         $orders = Order::query()
-            ->with('items')
+            ->with(['items', 'courier'])
             ->where('team_id', $teamId)
             ->where('status', OrderStatus::Finalized)
             ->whereBetween('finalized_at', [$from, $to])
@@ -116,6 +117,57 @@ class EloquentSalesReport implements SalesReport
             'payments' => $payments,
             'modalities' => $modalities,
             'topProducts' => $topProducts,
+            'couriers' => $this->couriers($orders, $teamId),
+        ];
+    }
+
+    /**
+     * @param  Collection<int, Order>  $orders
+     * @return array<string, mixed>
+     */
+    private function couriers(Collection $orders, int $teamId): array
+    {
+        $deliveries = $orders->where('modality', OrderModality::Delivery);
+        $assigned = $deliveries->filter(fn (Order $order): bool => $order->courier?->team_id === $teamId);
+        $rows = $assigned->groupBy('courier_id')->map(function ($courierOrders): array {
+            /** @var Order $first */
+            $first = $courierOrders->first();
+            $courier = $first->courier;
+            assert($courier !== null);
+            $count = $courierOrders->count();
+            $fees = $courierOrders->sum(fn (Order $order): int => $this->toCents($order->delivery_fee ?? '0.00'));
+            $total = $courierOrders->sum(fn (Order $order): int => $this->toCents($order->total()));
+            $durations = $courierOrders->filter(fn (Order $order): bool => $order->dispatched_at !== null
+                && $order->finalized_at !== null && $order->finalized_at->gte($order->dispatched_at))
+                ->map(fn (Order $order): float => $order->dispatched_at->diffInSeconds($order->finalized_at));
+
+            return [
+                'id' => $courier->id,
+                'name' => $courier->name,
+                'active' => $courier->active,
+                'deliveries' => $count,
+                'deliveryFees' => $this->fromCents($fees),
+                'averageFee' => $this->fromCents(intdiv($fees, $count)),
+                'ordersTotal' => $this->fromCents($total),
+                'averageTicket' => $this->fromCents(intdiv($total, $count)),
+                'averageDeliveryMinutes' => $durations->isEmpty() ? null : round($durations->avg() / 60, 1),
+                'timedDeliveries' => $durations->count(),
+                'recentDeliveries' => $courierOrders->sortByDesc('finalized_at')->take(5)
+                    ->map(fn (Order $order): array => [
+                        'id' => $order->id,
+                        'number' => $order->number,
+                        'finalizedAt' => $order->finalized_at?->toISOString(),
+                        'deliveryFee' => $order->delivery_fee ?? '0.00',
+                        'total' => $order->total(),
+                    ])->values()->all(),
+            ];
+        })->sortByDesc('deliveries')->values()->all();
+
+        return [
+            'deliveries' => $assigned->count(),
+            'deliveryFees' => $this->fromCents($assigned->sum(fn (Order $order): int => $this->toCents($order->delivery_fee ?? '0.00'))),
+            'unassignedDeliveries' => $deliveries->count() - $assigned->count(),
+            'rows' => $rows,
         ];
     }
 

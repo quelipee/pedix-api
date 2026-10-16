@@ -14,7 +14,7 @@ class DefaultOrderCommandFormatter implements OrderCommandFormatter
         $order->loadMissing(['items', 'team', 'courier']);
 
         return new OrderCommandData(
-            number: $order->id,
+            number: $order->number,
             teamName: $order->team->name,
             createdAt: $order->created_at?->toISOString() ?? now()->toISOString(),
             modality: $order->modality->label(),

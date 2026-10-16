@@ -15,6 +15,7 @@ import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
 import CreateOrderCard from '@/components/CreateOrderCard.vue';
 import TeamSwitcher from '@/components/TeamSwitcher.vue';
+import StoreStatusControl from '@/components/StoreStatusControl.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -139,6 +140,7 @@ function isActive(href: string): boolean {
             </div>
 
             <div class="flex shrink-0 items-center gap-2 sm:gap-4">
+                <StoreStatusControl v-if="page.props.currentTeam" />
                 <CreateOrderCard
                     v-if="showCreateOrder && permissions?.canCreateOrder"
                     :products="products ?? []"

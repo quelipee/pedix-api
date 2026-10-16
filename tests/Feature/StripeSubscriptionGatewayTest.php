@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Contracts\SubscriptionGateway;
 use App\Enums\BillingPlan;
 use App\Models\Team;
 use App\Models\User;
@@ -9,6 +10,7 @@ use App\Services\StripeSubscriptionGateway;
 use Closure;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
+use Laravel\Cashier\Cashier;
 use Mockery;
 use Mockery\MockInterface;
 use Stripe\ApiRequestor;
@@ -26,7 +28,10 @@ class StripeSubscriptionGatewayTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        config(['billing.plans.monthly.price_id' => 'price_monthly']);
+        config([
+            'billing.plans.monthly.price_id' => 'price_monthly',
+            'cashier.secret' => 'sk_test_example',
+        ]);
         $this->http = Mockery::mock(ClientInterface::class);
         ApiRequestor::setHttpClient($this->http);
     }
@@ -53,10 +58,34 @@ class StripeSubscriptionGatewayTest extends TestCase
             $this->assertStringContainsString('pedix-checkout-attempt-example', implode("\n", $headers));
         });
 
-        $checkout = (new StripeSubscriptionGateway(new StripeClient('sk_test_example')))
+        $checkout = $this->app->make(SubscriptionGateway::class)
             ->createCheckout($team, BillingPlan::Monthly, 15);
 
         $this->assertSame('cs_pedix', $checkout->id);
+    }
+
+    public function test_stripe_client_is_resolved_from_the_container_with_cashier_configuration(): void
+    {
+        $client = $this->app->make(StripeClient::class);
+
+        $this->assertSame('sk_test_example', $client->getApiKey());
+        $this->assertSame(Cashier::STRIPE_VERSION, $client->getStripeVersion());
+        $this->assertSame(Cashier::$apiBaseUrl, $client->getApiBase());
+        $this->assertSame($client, $this->app->make(StripeClient::class));
+    }
+
+    public function test_cashier_can_resolve_the_client_with_custom_configuration(): void
+    {
+        $this->app->make(StripeClient::class);
+
+        $client = Cashier::stripe([
+            'api_key' => 'sk_test_override',
+            'api_base' => 'https://stripe.example.test',
+        ]);
+
+        $this->assertSame('sk_test_override', $client->getApiKey());
+        $this->assertSame('https://stripe.example.test', $client->getApiBase());
+        $this->assertSame(Cashier::STRIPE_VERSION, $client->getStripeVersion());
     }
 
     public function test_incorrect_amount_or_currency_is_rejected_before_creating_checkout(): void
@@ -103,6 +132,17 @@ class StripeSubscriptionGatewayTest extends TestCase
         ])->save();
 
         return $team;
+    }
+
+    public function test_subscription_snapshot_is_retrieved_from_stripe_by_id(): void
+    {
+        $this->httpResponse('get', '/v1/subscriptions/sub_snapshot', [
+            'id' => 'sub_snapshot', 'object' => 'subscription', 'status' => 'canceled', 'customer' => 'cus_snapshot',
+        ]);
+        $snapshot = $this->app->make(SubscriptionGateway::class)->subscriptionSnapshot('sub_snapshot');
+        $this->assertSame('sub_snapshot', $snapshot['id']);
+        $this->assertSame('canceled', $snapshot['status']);
+        $this->assertSame('cus_snapshot', $snapshot['customer']);
     }
 
     /** @param array<string, mixed> $overrides */

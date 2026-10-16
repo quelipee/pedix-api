@@ -68,7 +68,7 @@ function submit(): void {
                     {{
                         order?.courier ? 'Trocar motoboy' : 'Selecionar motoboy'
                     }}
-                    #{{ order?.id }}
+                    #{{ order?.number }}
                 </DialogTitle>
                 <DialogDescription>
                     Escolha o motoboy responsável por esta entrega.

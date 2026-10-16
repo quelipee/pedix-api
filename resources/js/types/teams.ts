@@ -5,6 +5,7 @@ export type Team = {
     name: string;
     slug: string;
     isPersonal: boolean;
+    isOpen: boolean;
     role?: TeamRole;
     roleLabel?: string;
     isCurrent?: boolean;
@@ -64,6 +65,7 @@ export type TeamPermissions = {
     canRemoveMember: boolean;
     canCreateInvitation: boolean;
     canCancelInvitation: boolean;
+    canManageStoreStatus: boolean;
 };
 
 export type RoleOption = {

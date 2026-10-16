@@ -375,12 +375,12 @@ defineOptions({
                         <button
                             type="button"
                             class="min-w-0 text-left focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
-                            :aria-label="`Ver detalhes do pedido número ${order.id}`"
+                            :aria-label="`Ver detalhes do pedido número ${order.number}`"
                             @click="selectedOrder = order"
                         >
                             <span class="flex items-center gap-2 font-semibold">
                                 <ClipboardList class="size-4 text-primary" />
-                                Pedido #{{ order.id }}
+                                Pedido #{{ order.number }}
                             </span>
                             <span
                                 class="mt-1 block text-sm text-muted-foreground"

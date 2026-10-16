@@ -15,6 +15,6 @@ class OpenCashRegisterRequest extends FormRequest
     /** @return array<string, ValidationRule|array<mixed>|string> */
     public function rules(): array
     {
-        return ['opening_balance' => ['required', 'numeric', 'min:0', 'decimal:0,2']];
+        return ['opening_balance' => ['required', 'numeric', 'min:0', 'max:99999999.99', 'decimal:0,2']];
     }
 }

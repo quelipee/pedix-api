@@ -10,11 +10,13 @@ import {
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import MetricCard from '@/components/workspace/MetricCard.vue';
+import SubscriptionNotice from '@/components/SubscriptionNotice.vue';
 import PendingInvitationsModal from '@/components/PendingInvitationsModal.vue';
 import OrderDetailsDialog from '@/components/OrderDetailsDialog.vue';
 import { dashboard } from '@/routes';
 import { manage as manageOrders } from '@/routes/orders';
 import type { DashboardInvitation, Team } from '@/types';
+import type { SubscriptionNoticeData } from '@/types/billing';
 import type { OrderDetails, OrderStatus } from '@/types/orders';
 
 const props = defineProps<{
@@ -28,6 +30,7 @@ const props = defineProps<{
     recentOrders: OrderDetails[];
     products: { id: number; name: string; price: string }[];
     pendingInvitations?: DashboardInvitation[];
+    subscriptionNotice: SubscriptionNoticeData | null;
 }>();
 
 const page = usePage();
@@ -164,6 +167,11 @@ defineOptions({
             </div>
         </section>
 
+        <SubscriptionNotice
+            v-if="subscriptionNotice"
+            :notice="subscriptionNotice"
+        />
+
         <section
             aria-label="Indicadores do dia"
             class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
@@ -213,7 +221,7 @@ defineOptions({
                         :key="order.id"
                         type="button"
                         class="flex w-full flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl border border-border/70 bg-background/40 px-4 py-3 text-left transition-colors hover:bg-muted/30 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
-                        :aria-label="`Ver detalhes do pedido número ${order.id}`"
+                        :aria-label="`Ver detalhes do pedido número ${order.number}`"
                         @click="selectedOrder = order"
                     >
                         <div class="flex min-w-0 items-center gap-3">
@@ -224,7 +232,7 @@ defineOptions({
                             </span>
                             <div class="min-w-0">
                                 <p class="font-medium">
-                                    Pedido #{{ order.id }}
+                                    Pedido #{{ order.number }}
                                 </p>
                                 <p class="mt-1 text-sm text-muted-foreground">
                                     {{ order.modalityLabel }}

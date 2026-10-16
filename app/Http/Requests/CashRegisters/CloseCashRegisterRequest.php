@@ -15,6 +15,6 @@ class CloseCashRegisterRequest extends FormRequest
     /** @return array<string, ValidationRule|array<mixed>|string> */
     public function rules(): array
     {
-        return ['closing_balance' => ['required', 'numeric', 'decimal:0,2']];
+        return ['closing_balance' => ['required', 'numeric', 'between:-99999999.99,99999999.99', 'decimal:0,2']];
     }
 }

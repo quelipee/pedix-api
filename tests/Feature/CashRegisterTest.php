@@ -16,6 +16,98 @@ class CashRegisterTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_pix_withdrawals_are_separate_from_cash_and_preserved_in_closing_history(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user)->postJson(route('cash-registers.open'), ['opening_balance' => '100.00'])->assertCreated();
+        $register = CashRegister::query()->firstOrFail();
+        foreach ([$this->orderReadyForFinalization('dinheiro', '50.00'), $this->orderReadyForFinalization('pix', '100.00')] as $order) {
+            $this->patchJson(route('orders.advance', $order), ['status' => OrderStatus::Finalized->value])->assertOk();
+        }
+        foreach ([['dinheiro', '20.55'], ['pix', '30.25']] as [$method, $amount]) {
+            $this->postJson(route('cash-registers.movements.store', $register), [
+                'type' => 'sangria', 'payment_method' => $method, 'amount' => $amount, 'description' => 'Pagamento de fornecedor',
+            ])->assertCreated();
+            $this->assertDatabaseHas('cash_movements', ['cash_register_id' => $register->id, 'payment_method' => $method, 'amount' => $amount]);
+        }
+        $this->get(route('cash-registers.index'))->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->where('cashRegister.expectedCash', '129.45')->where('cashRegister.netPix', '69.75')
+            ->where('cashRegister.totalSales', '150.00')->where('cashRegister.withdrawals', '50.80')
+            ->where('cashRegister.cashWithdrawals', '20.55')->where('cashRegister.pixWithdrawals', '30.25')
+            ->where('cashRegister.movements.0.paymentMethod', 'pix')->where('cashRegister.movements.0.paymentMethodLabel', 'Pix'));
+
+        $this->patchJson(route('cash-registers.close', $register), ['closing_balance' => '129.45'])
+            ->assertOk()->assertJsonPath('data.expected_cash', '129.45')->assertJsonPath('data.difference', '0.00');
+        $this->get(route('cash-registers.index'))->assertInertia(fn (Assert $page) => $page
+            ->where('recentRegisters.0.netPix', '69.75')->where('recentRegisters.0.pixWithdrawals', '30.25')
+            ->where('recentRegisters.0.cashWithdrawals', '20.55')->where('recentRegisters.0.movements.0.paymentMethod', 'pix'));
+        $this->postJson(route('cash-registers.movements.store', $register), [
+            'type' => 'sangria', 'payment_method' => 'pix', 'amount' => '10.00', 'description' => 'Caixa fechado',
+        ])->assertUnprocessable()->assertJsonValidationErrors('cash_register');
+        $this->assertDatabaseCount('cash_movements', 2);
+    }
+
+    public function test_movement_method_validation_and_team_isolation_apply_to_pix(): void
+    {
+        $owner = User::factory()->create();
+        $register = CashRegister::factory()->create(['team_id' => $owner->current_team_id, 'opened_by' => $owner->id]);
+        $url = route('cash-registers.movements.store', $register);
+        foreach (['credito', 'debito', 'invalid', '', null] as $method) {
+            $this->actingAs($owner)->postJson($url, [
+                'type' => 'sangria', 'payment_method' => $method, 'amount' => '10.00', 'description' => 'Inválido',
+            ])->assertUnprocessable()->assertJsonValidationErrors('payment_method');
+        }
+        $this->postJson($url, [
+            'type' => 'suprimento', 'payment_method' => 'pix', 'amount' => '10.00', 'description' => 'Inválido',
+        ])->assertUnprocessable()->assertJsonValidationErrors('payment_method');
+        $this->actingAs(User::factory()->create())->postJson($url, [
+            'type' => 'sangria', 'payment_method' => 'pix', 'amount' => '10.00', 'description' => 'Outra equipe',
+        ])->assertUnprocessable()->assertJsonValidationErrors('cash_register');
+        $this->assertDatabaseCount('cash_movements', 0);
+    }
+
+    public function test_negative_net_pix_does_not_reduce_the_physical_cash_balance(): void
+    {
+        $owner = User::factory()->create();
+        $register = CashRegister::factory()->create(['team_id' => $owner->current_team_id, 'opened_by' => $owner->id]);
+        $this->actingAs($owner)->postJson(route('cash-registers.movements.store', $register), [
+            'type' => 'sangria', 'payment_method' => 'pix', 'amount' => '50.50', 'description' => 'Retirada da conta',
+        ])->assertCreated();
+        $this->get(route('cash-registers.index'))->assertInertia(fn (Assert $page) => $page
+            ->where('cashRegister.expectedCash', '100.00')->where('cashRegister.netPix', '-50.50')
+            ->where('cashRegister.cashWithdrawals', '0.00')->where('cashRegister.pixWithdrawals', '50.50'));
+    }
+
+    public function test_cash_accepts_decimal_boundaries_and_preserves_negative_closing(): void
+    {
+        $owner = User::factory()->create();
+        $this->actingAs($owner)->postJson(route('cash-registers.open'), ['opening_balance' => '99999999.99'])->assertCreated();
+        $register = CashRegister::query()->firstOrFail();
+        $this->patchJson(route('cash-registers.close', $register), ['closing_balance' => '99999999.99'])
+            ->assertOk()->assertJsonPath('data.difference', '0.00');
+
+        $this->postJson(route('cash-registers.open'), ['opening_balance' => '0.00'])->assertCreated();
+        $register = CashRegister::query()->whereNull('closed_at')->firstOrFail();
+        $this->patchJson(route('cash-registers.close', $register), ['closing_balance' => '-99999999.99'])
+            ->assertOk()->assertJsonPath('data.closing_balance', '-99999999.99');
+    }
+
+    public function test_closing_rejects_calculated_values_outside_decimal_bounds(): void
+    {
+        $owner = User::factory()->create();
+        $this->actingAs($owner)->postJson(route('cash-registers.open'), ['opening_balance' => '99999999.99'])->assertCreated();
+        $register = CashRegister::query()->firstOrFail();
+        $this->patchJson(route('cash-registers.close', $register), ['closing_balance' => '-99999999.99'])
+            ->assertUnprocessable()->assertJsonValidationErrors('closing_balance');
+        $this->postJson(route('cash-registers.movements.store', $register), [
+            'type' => 'suprimento', 'amount' => '0.01', 'description' => 'Limite do saldo calculado',
+        ])->assertCreated();
+        $this->patchJson(route('cash-registers.close', $register), ['closing_balance' => '0.00'])
+            ->assertUnprocessable()->assertJsonValidationErrors('closing_balance');
+        $this->assertNull($register->fresh()->closed_at);
+        $this->assertNull($register->fresh()->closing_balance);
+    }
+
     public function test_the_calculator_contract_is_resolved_by_dependency_injection(): void
     {
         $this->assertInstanceOf(

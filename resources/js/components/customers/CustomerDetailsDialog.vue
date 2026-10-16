@@ -224,7 +224,7 @@ function handleOpenChange(open: boolean): void {
                             @click="selectedOrder = order"
                         >
                             <span
-                                ><strong>Pedido #{{ order.id }}</strong
+                                ><strong>Pedido #{{ order.number }}</strong
                                 ><small class="block text-muted-foreground">{{
                                     dateFormatter.format(
                                         new Date(order.createdAt ?? ''),

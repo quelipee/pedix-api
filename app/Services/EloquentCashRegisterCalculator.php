@@ -29,9 +29,11 @@ class EloquentCashRegisterCalculator implements CashRegisterCalculator
         return $totals->all();
     }
 
-    public function movementTotal(CashRegister $cashRegister, CashMovementType $type): string
+    public function movementTotal(CashRegister $cashRegister, CashMovementType $type, ?PaymentMethod $paymentMethod = null): string
     {
-        $total = $cashRegister->movements()->where('type', $type)->get()
+        $total = $cashRegister->movements()->where('type', $type)
+            ->when($paymentMethod !== null, fn ($query) => $query->where('payment_method', $paymentMethod))
+            ->get()
             ->sum(fn (CashMovement $movement): int => $this->toCents($movement->amount));
 
         return $this->fromCents($total);
@@ -52,8 +54,16 @@ class EloquentCashRegisterCalculator implements CashRegisterCalculator
         return $this->fromCents(
             $this->toCents($cashRegister->opening_balance)
             + $this->toCents($cashSales)
-            + $this->toCents($this->movementTotal($cashRegister, CashMovementType::Supply))
-            - $this->toCents($this->movementTotal($cashRegister, CashMovementType::Withdrawal)),
+            + $this->toCents($this->movementTotal($cashRegister, CashMovementType::Supply, PaymentMethod::Cash))
+            - $this->toCents($this->movementTotal($cashRegister, CashMovementType::Withdrawal, PaymentMethod::Cash)),
+        );
+    }
+
+    public function netPix(CashRegister $cashRegister): string
+    {
+        return $this->fromCents(
+            $this->toCents($this->salesTotals($cashRegister)[PaymentMethod::Pix->value])
+            - $this->toCents($this->movementTotal($cashRegister, CashMovementType::Withdrawal, PaymentMethod::Pix)),
         );
     }
 

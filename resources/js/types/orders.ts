@@ -7,6 +7,7 @@ export type OrderStatus =
 
 export type OrderDetails = {
     id: number;
+    number: number;
     customerId: number | null;
     modality: 'local' | 'retirada' | 'entrega';
     modalityLabel: string;

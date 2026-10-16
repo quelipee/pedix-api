@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'enforce_subscriptions' => (bool) env('BILLING_ENFORCE_SUBSCRIPTIONS', true),
     'subscription_type' => 'default',
     'trial_days' => (int) env('BILLING_TRIAL_DAYS', 15),
     'currency' => 'brl',

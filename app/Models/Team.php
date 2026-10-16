@@ -21,6 +21,9 @@ use Laravel\Cashier\Subscription;
  * @property string $name
  * @property string $slug
  * @property bool $is_personal
+ * @property bool $is_open
+ * @property int $order_cycle
+ * @property int $next_order_number
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
@@ -47,6 +50,10 @@ class Team extends Model
     /** @use HasFactory<TeamFactory> */
     use Billable, GeneratesUniqueTeamSlugs, HasFactory, SoftDeletes;
 
+    protected $attributes = [
+        'is_open' => false,
+    ];
+
     protected $hidden = [
         'stripe_id', 'pm_type', 'pm_last_four', 'trial_ends_at',
         'billing_checkout_id', 'billing_checkout_token',
@@ -60,6 +67,11 @@ class Team extends Model
         return $owner instanceof User ? $owner->email : null;
     }
 
+    public function canAcceptOnlineOrders(): bool
+    {
+        return $this->is_open && $this->hasValidSubscription();
+    }
+
     public function hasOngoingSubscription(): bool
     {
         return $this->subscriptions()->where(function ($query): void {
@@ -71,6 +83,27 @@ class Team extends Model
     public function hasPendingCheckout(): bool
     {
         return $this->billing_checkout_token !== null && $this->billing_checkout_expires_at?->isFuture() === true;
+    }
+
+    public function hasValidSubscription(): bool
+    {
+        $subscription = $this->subscription(config('billing.subscription_type'));
+        if ($subscription === null || ($subscription->ends_at !== null && ! $subscription->ends_at->isFuture())) {
+            return false;
+        }
+
+        if ($subscription->stripe_status === 'trialing') {
+            return $subscription->trial_ends_at?->isFuture() === true;
+        }
+
+        if (! in_array($subscription->stripe_status, ['active', 'canceled'], true)
+            || ($subscription->stripe_status === 'canceled' && ! $subscription->ends_at?->isFuture())) {
+            return false;
+        }
+
+        $periodEnd = $subscription->getAttribute('current_period_ends_at');
+
+        return is_string($periodEnd) && Carbon::parse($periodEnd)->isFuture();
     }
 
     /**
@@ -181,6 +214,9 @@ class Team extends Model
     {
         return [
             'is_personal' => 'boolean',
+            'is_open' => 'boolean',
+            'order_cycle' => 'integer',
+            'next_order_number' => 'integer',
             'trial_ends_at' => 'datetime',
             'billing_checkout_expires_at' => 'datetime',
         ];

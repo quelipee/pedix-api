@@ -37,11 +37,16 @@ type CashRegister = {
     totalSales: string;
     supplies: string;
     withdrawals: string;
+    cashWithdrawals: string;
+    pixWithdrawals: string;
+    netPix: string;
     sales: { method: string; label: string; total: string }[];
     movements: {
         id: number;
         type: 'suprimento' | 'sangria';
         typeLabel: string;
+        paymentMethod: 'dinheiro' | 'pix';
+        paymentMethodLabel: string;
         amount: string;
         description: string;
         userName: string;
@@ -72,9 +77,15 @@ const pageUrl = computed(() =>
 const openingForm = useHttp({ opening_balance: '' });
 const movementForm = useHttp<{
     type: 'suprimento' | 'sangria';
+    payment_method: 'dinheiro' | 'pix';
     amount: string;
     description: string;
-}>({ type: 'suprimento', amount: '', description: '' });
+}>({
+    type: 'suprimento',
+    payment_method: 'dinheiro',
+    amount: '',
+    description: '',
+});
 const closingForm = useHttp({ closing_balance: '' });
 const movementDialogOpen = ref(false);
 const closingDialogOpen = ref(false);
@@ -222,8 +233,8 @@ defineOptions({ layout: () => ({ breadcrumbs: [] }) });
                 <h2 class="font-semibold">Como funciona</h2>
                 <p class="mt-2 text-sm leading-6 text-muted-foreground">
                     As vendas finalizadas durante o turno entram neste caixa.
-                    Suprimentos e sangrias ajustam o dinheiro esperado no
-                    fechamento.
+                    Suprimentos e sangrias em dinheiro ajustam o saldo da
+                    gaveta. Sangrias por Pix são registradas separadamente.
                 </p>
             </div>
         </section>
@@ -289,10 +300,13 @@ defineOptions({ layout: () => ({ breadcrumbs: [] }) });
                         Suprimentos / sangrias
                     </p>
                     <p class="mt-2 font-semibold text-emerald-600">
-                        + {{ money(cashRegister.supplies) }}
+                        + {{ money(cashRegister.supplies) }} em dinheiro
                     </p>
                     <p class="text-sm font-semibold text-rose-600">
-                        − {{ money(cashRegister.withdrawals) }}
+                        − {{ money(cashRegister.cashWithdrawals) }} em dinheiro
+                    </p>
+                    <p class="text-sm font-semibold text-rose-600">
+                        − {{ money(cashRegister.pixWithdrawals) }} por Pix
                     </p>
                 </div>
                 <div class="workspace-feature p-5">
@@ -315,6 +329,16 @@ defineOptions({ layout: () => ({ breadcrumbs: [] }) });
                     <div class="flex items-center gap-2">
                         <WalletCards class="size-5 text-primary" />
                         <h2 class="font-semibold">Vendas por pagamento</h2>
+                    </div>
+                    <div class="mt-4 rounded-xl border bg-muted/30 p-3 text-sm">
+                        <div class="flex justify-between gap-3">
+                            <span>Pix líquido do turno</span>
+                            <strong>{{ money(cashRegister.netPix) }}</strong>
+                        </div>
+                        <p class="mt-1 text-xs text-muted-foreground">
+                            Vendas por Pix menos sangrias por Pix. Não
+                            representa o saldo da conta bancária.
+                        </p>
                     </div>
                     <div class="mt-4 grid gap-2 sm:grid-cols-2">
                         <div
@@ -352,6 +376,7 @@ defineOptions({ layout: () => ({ breadcrumbs: [] }) });
                                 </p>
                                 <p class="text-xs text-muted-foreground">
                                     {{ movement.typeLabel }} ·
+                                    {{ movement.paymentMethodLabel }} ·
                                     {{ movement.userName }} ·
                                     {{ dateTime(movement.createdAt) }}
                                 </p>
@@ -460,6 +485,33 @@ defineOptions({ layout: () => ({ breadcrumbs: [] }) });
                 ></DialogHeader
             >
             <form class="space-y-4" @submit.prevent="submitMovement">
+                <div v-if="movementForm.type === 'sangria'" class="space-y-2">
+                    <Label for="movement-payment-method"
+                        >Forma da retirada</Label
+                    >
+                    <select
+                        id="movement-payment-method"
+                        v-model="movementForm.payment_method"
+                        class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                        required
+                    >
+                        <option value="dinheiro">Dinheiro</option>
+                        <option value="pix">Pix</option>
+                    </select>
+                    <p class="text-xs text-muted-foreground">
+                        {{
+                            movementForm.payment_method === 'pix'
+                                ? 'Registre uma transferência já realizada. Nenhuma transferência será feita pelo sistema e o dinheiro da gaveta não será alterado.'
+                                : 'Retirada de dinheiro físico da gaveta.'
+                        }}
+                    </p>
+                    <p
+                        v-if="movementForm.errors.payment_method"
+                        class="text-sm text-destructive"
+                    >
+                        {{ movementForm.errors.payment_method }}
+                    </p>
+                </div>
                 <div class="space-y-2">
                     <Label for="movement-amount">Valor</Label
                     ><Input
@@ -540,6 +592,12 @@ defineOptions({ layout: () => ({ breadcrumbs: [] }) });
                     >
                         <span>Dinheiro esperado na gaveta</span>
                         <strong>{{ money(cashRegister.expectedCash) }}</strong>
+                    </div>
+                    <div
+                        class="flex justify-between rounded-xl bg-muted/40 p-3 text-sm"
+                    >
+                        <span>Pix líquido do turno</span>
+                        <strong>{{ money(cashRegister.netPix) }}</strong>
                     </div>
                 </div>
                 <div class="space-y-2">
@@ -652,11 +710,15 @@ defineOptions({ layout: () => ({ breadcrumbs: [] }) });
 
                 <section>
                     <h3 class="mb-2 text-sm font-semibold">
-                        Movimentações em dinheiro
+                        Movimentações em dinheiro e Pix
                     </h3>
                     <p class="mb-2 text-sm text-muted-foreground">
                         Suprimentos: {{ money(selectedRegister.supplies) }} ·
-                        Sangrias: {{ money(selectedRegister.withdrawals) }}
+                        Sangrias em dinheiro:
+                        {{ money(selectedRegister.cashWithdrawals) }} · Sangrias
+                        por Pix: {{ money(selectedRegister.pixWithdrawals) }} ·
+                        Pix líquido do turno:
+                        {{ money(selectedRegister.netPix) }}
                     </p>
                     <div
                         v-for="movement in selectedRegister.movements"
@@ -669,6 +731,7 @@ defineOptions({ layout: () => ({ breadcrumbs: [] }) });
                             </p>
                             <p class="text-muted-foreground">
                                 {{ movement.typeLabel }} ·
+                                {{ movement.paymentMethodLabel }} ·
                                 {{ movement.userName }} ·
                                 {{ dateTime(movement.createdAt) }}
                             </p>

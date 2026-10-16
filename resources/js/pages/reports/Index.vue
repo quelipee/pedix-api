@@ -11,10 +11,12 @@ import {
     WalletCards,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import CourierReportDialog from '@/components/reports/CourierReportDialog.vue';
 import MetricCard from '@/components/workspace/MetricCard.vue';
 import PageHeader from '@/components/workspace/PageHeader.vue';
 import { index as reportsIndex } from '@/routes/reports';
 import type { Team } from '@/types';
+import type { CourierReport } from '@/types/reports';
 
 type Period = 'today' | '7d' | '30d' | 'custom';
 type Breakdown = {
@@ -42,6 +44,7 @@ const props = defineProps<{
         payments: Breakdown[];
         modalities: Breakdown[];
         topProducts: { name: string; quantity: number; total: string }[];
+        couriers: CourierReport;
     };
     filters: {
         period: Period;
@@ -146,6 +149,11 @@ defineOptions({ layout: () => ({ breadcrumbs: [], showCreateOrder: true }) });
             eyebrow="Decisões com mais clareza"
             description="Um olhar sobre o que sua casa vende. Os resultados consideram as vendas finalizadas."
         >
+            <CourierReportDialog
+                :report="report.couriers"
+                :from="filters.dateTimeFrom"
+                :to="filters.dateTimeTo"
+            />
             <div
                 class="flex max-w-full gap-1 overflow-x-auto rounded-xl border bg-card p-1"
             >

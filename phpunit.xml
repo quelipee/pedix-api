@@ -19,6 +19,8 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
+        <!-- Business tests isolate billing; subscription access tests explicitly enable enforcement. -->
+        <env name="BILLING_ENFORCE_SUBSCRIPTIONS" value="false"/>
         <env name="AUTH_REQUIRE_EMAIL_VERIFICATION" value="true"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>

@@ -65,7 +65,7 @@ class OrderManagementController extends Controller
                         ->orWhere('customer_phone', 'like', "%{$search}%");
 
                     if (ctype_digit($search)) {
-                        $query->orWhereKey((int) $search);
+                        $query->orWhere('number', (int) $search);
                     }
                 });
             })

@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Actions\Orders\AllocateOrderNumber;
 use App\Enums\OrderModality;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
@@ -17,7 +18,7 @@ class OrderDemoSeeder extends Seeder
     /**
      * Seed sample orders for the dashboard without duplicating real orders.
      */
-    public function run(): void
+    public function run(AllocateOrderNumber $allocateOrderNumber): void
     {
         $teamId = Team::query()->value('id') ?? User::factory()->create()->current_team_id;
 
@@ -51,11 +52,13 @@ class OrderDemoSeeder extends Seeder
 
         $seededAt = now();
 
-        DB::transaction(function () use ($orders, $products, $seededAt, $teamId): void {
+        DB::transaction(function () use ($orders, $products, $seededAt, $teamId, $allocateOrderNumber): void {
             foreach ($orders as $orderData) {
                 $createdAt = $seededAt->copy()->subMinutes($orderData['minutes_ago']);
 
-                $order = Order::factory()->create([
+                // DatabaseSeeder disables model events, so reserve explicitly using the same allocator.
+                $order = Order::factory()->createQuietly([
+                    ...$allocateOrderNumber->handle($teamId),
                     'team_id' => $teamId,
                     'modality' => $orderData['modality'],
                     'status' => $orderData['status'],

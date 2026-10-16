@@ -317,7 +317,7 @@ defineOptions({
                                 @click="selectedOrder = order"
                             >
                                 <span class="text-base font-semibold">
-                                    Pedido #{{ order.id }}
+                                    Pedido #{{ order.number }}
                                 </span>
                                 <span
                                     class="mt-0.5 block text-sm text-muted-foreground"
@@ -397,7 +397,7 @@ defineOptions({
                                     size="sm"
                                     variant="outline"
                                     class="gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                                    :aria-label="`Cancelar pedido #${order.id}`"
+                                    :aria-label="`Cancelar pedido #${order.number}`"
                                     title="Cancelar pedido"
                                     @click="cancellingOrder = order"
                                 >

@@ -156,7 +156,7 @@ defineOptions({ layout: () => ({ breadcrumbs: [], showCreateOrder: true }) });
                     @click="selectedOrder = order"
                 >
                     <div>
-                        <p class="font-semibold">Pedido #{{ order.id }}</p>
+                        <p class="font-semibold">Pedido #{{ order.number }}</p>
                         <p class="text-sm text-muted-foreground">
                             {{
                                 dateFormatter.format(

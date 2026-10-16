@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Actions\Fortify\CreateNewUser;
 use App\Enums\TeamRole;
 use App\Models\Team;
 use App\Models\TeamInvitation;
@@ -55,6 +56,7 @@ class RegistrationTest extends TestCase
 
         $response = $this->post(route('register.store'), [
             'name' => 'Test User',
+            'delivery_name' => 'Fuks Lanches',
             'email' => 'test@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
@@ -63,6 +65,12 @@ class RegistrationTest extends TestCase
         $this->assertAuthenticated();
 
         $user = User::where('email', 'test@example.com')->first();
+
+        $this->assertSame('Test User', $user->name);
+        $this->assertSame('Fuks Lanches', $user->currentTeam->name);
+        $this->assertSame('fuks-lanches', $user->currentTeam->slug);
+        $this->assertTrue($user->currentTeam->is_personal);
+        $this->assertSame(TeamRole::Owner, $user->teamRole($user->currentTeam));
 
         Notification::assertSentTo($user, VerifyEmail::class);
         $response->assertRedirect(route('dashboard'));
@@ -75,6 +83,7 @@ class RegistrationTest extends TestCase
 
         $response = $this->post(route('register.store'), [
             'name' => 'Local User',
+            'delivery_name' => 'Delivery Local',
             'email' => 'local@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
@@ -86,6 +95,47 @@ class RegistrationTest extends TestCase
         $this->assertTrue($user->hasVerifiedEmail());
         Notification::assertNothingSent();
         $response->assertRedirect(route('dashboard'));
+        $this->get(route('dashboard', $user->currentTeam->slug))->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('currentTeam.name', 'Delivery Local')
+                ->where('auth.user.name', 'Local User'));
+    }
+
+    public function test_delivery_name_is_required_and_uses_existing_team_name_rules(): void
+    {
+        foreach ([null, '', '   ', str_repeat('a', 256), ['invalid'], 'admin'] as $name) {
+            $this->post(route('register.store'), [
+                'name' => 'Test User', 'delivery_name' => $name,
+                'email' => 'test@example.com', 'password' => 'password', 'password_confirmation' => 'password',
+            ])->assertSessionHasErrors('delivery_name');
+            $this->assertGuest();
+            $this->assertDatabaseCount('users', 0);
+            $this->assertDatabaseCount('teams', 0);
+        }
+        $this->post(route('register.store'), [
+            'name' => 'Test User', 'email' => 'test@example.com',
+            'password' => 'password', 'password_confirmation' => 'password',
+        ])->assertSessionHasErrors('delivery_name');
+        $this->assertDatabaseCount('users', 0);
+    }
+
+    public function test_deliveries_with_the_same_name_have_separate_teams_and_unique_addresses(): void
+    {
+        $action = $this->app->make(CreateNewUser::class);
+        $first = $action->create([
+            'name' => 'Ana', 'delivery_name' => 'Sabor da Casa', 'email' => 'ana@example.com',
+            'password' => 'password', 'password_confirmation' => 'password',
+        ]);
+        $second = $action->create([
+            'name' => 'João', 'delivery_name' => 'Sabor da Casa', 'email' => 'joao@example.com',
+            'password' => 'password', 'password_confirmation' => 'password',
+        ]);
+
+        $this->assertSame('Sabor da Casa', $first->currentTeam->name);
+        $this->assertSame('Sabor da Casa', $second->currentTeam->name);
+        $this->assertNotSame($first->current_team_id, $second->current_team_id);
+        $this->assertNotSame($first->currentTeam->slug, $second->currentTeam->slug);
+        $this->assertFalse($first->belongsToTeam($second->currentTeam));
     }
 
     public function test_registration_rejects_an_email_that_is_already_registered(): void
@@ -94,6 +144,7 @@ class RegistrationTest extends TestCase
 
         $response = $this->post(route('register.store'), [
             'name' => 'Another User',
+            'delivery_name' => 'Outro Delivery',
             'email' => 'existing@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',

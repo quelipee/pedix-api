@@ -157,6 +157,7 @@ trait HasTeams
             role: $role?->value,
             roleLabel: $role?->label(),
             isCurrent: $this->isCurrentTeam($team),
+            isOpen: $team->is_open,
         );
     }
 
@@ -190,6 +191,7 @@ trait HasTeams
             canRemoveMember: $role?->hasPermission(TeamPermission::RemoveMember) ?? false,
             canCreateInvitation: $role?->hasPermission(TeamPermission::CreateInvitation) ?? false,
             canCancelInvitation: $role?->hasPermission(TeamPermission::CancelInvitation) ?? false,
+            canManageStoreStatus: $role?->hasPermission(TeamPermission::ManageStoreStatus) ?? false,
         );
     }
 

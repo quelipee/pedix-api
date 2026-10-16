@@ -27,6 +27,7 @@ readonly class TeamPermissions
         public bool $canRemoveMember,
         public bool $canCreateInvitation,
         public bool $canCancelInvitation,
+        public bool $canManageStoreStatus = false,
     ) {
         //
     }

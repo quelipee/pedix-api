@@ -46,7 +46,7 @@ function submit(): void {
     <Dialog :open="order !== null" @update:open="handleOpenChange">
         <DialogContent class="sm:max-w-lg">
             <DialogHeader>
-                <DialogTitle>Cancelar pedido #{{ order?.id }}</DialogTitle>
+                <DialogTitle>Cancelar pedido #{{ order?.number }}</DialogTitle>
                 <DialogDescription>
                     O pedido sairá do painel ativo e continuará disponível no
                     histórico como cancelado.

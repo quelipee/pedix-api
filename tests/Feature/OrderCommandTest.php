@@ -57,7 +57,7 @@ class OrderCommandTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('orders/Command')
-                ->where('command.number', $order->id)
+                ->where('command.number', $order->number)
                 ->where('command.teamName', $team->name)
                 ->where('command.customerName', 'Felipe Matheus')
                 ->where('command.modality', 'Retirada')

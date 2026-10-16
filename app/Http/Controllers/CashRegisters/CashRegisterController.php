@@ -6,6 +6,7 @@ use App\Actions\CashRegisters\AddCashMovement;
 use App\Actions\CashRegisters\CloseCashRegister;
 use App\Actions\CashRegisters\OpenCashRegister;
 use App\Enums\CashMovementType;
+use App\Enums\PaymentMethod;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CashRegisters\CloseCashRegisterRequest;
 use App\Http\Requests\CashRegisters\OpenCashRegisterRequest;
@@ -39,6 +40,7 @@ class CashRegisterController extends Controller
             CashMovementType::from($request->validated('type')),
             $request->validated('amount'),
             $request->validated('description'),
+            PaymentMethod::from($request->validated('payment_method', PaymentMethod::Cash->value)),
         );
 
         return response()->json([
