@@ -33,7 +33,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(SubscriptionGateway::class, StripeSubscriptionGateway::class);
         $this->app->singleton(StripeClient::class, fn (Application $app, array $parameters): StripeClient => new StripeClient(
             $parameters['config'] ?? [
-                'api_key' => config('cashier.secret'),
+                'api_key' => config('cashier.secret') ?: null,
                 'stripe_version' => Cashier::STRIPE_VERSION,
                 'api_base' => Cashier::$apiBaseUrl,
             ],

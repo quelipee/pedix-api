@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Contracts\SubscriptionGateway;
 use App\Enums\BillingPlan;
+use App\Http\Controllers\Billing\StripeWebhookController;
 use App\Models\Team;
 use App\Models\User;
 use App\Services\StripeSubscriptionGateway;
@@ -24,6 +25,23 @@ class StripeSubscriptionGatewayTest extends TestCase
     use RefreshDatabase;
 
     private MockInterface $http;
+
+    public function test_route_inspection_can_resolve_stripe_dependencies_without_a_secret(): void
+    {
+        config(['cashier.secret' => '']);
+        $this->app->forgetInstance(StripeClient::class);
+
+        $client = $this->app->make(StripeClient::class);
+        $this->assertNull($client->getApiKey());
+        $controller = app('router')->getRoutes()->getByName('cashier.webhook')->getController();
+        $this->assertInstanceOf(StripeWebhookController::class, $controller);
+
+        $owner = User::factory()->create();
+        foreach (['billing.checkout', 'billing.portal'] as $route) {
+            $this->actingAs($owner)->postJson(route($route, $owner->currentTeam->slug), ['plan' => 'monthly'])
+                ->assertStatus(503);
+        }
+    }
 
     protected function setUp(): void
     {
