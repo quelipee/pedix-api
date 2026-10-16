@@ -2,6 +2,7 @@
 import { Head, Link, router, useHttp, usePage } from '@inertiajs/vue3';
 import { ArrowLeft, Save } from '@lucide/vue';
 import { computed } from 'vue';
+import PageHeader from '@/components/workspace/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
@@ -41,28 +42,21 @@ defineOptions({ layout: () => ({ breadcrumbs: [] }) });
 <template>
     <Head title="Novo cliente" />
 
-    <div class="mx-auto flex w-full max-w-4xl flex-col gap-6 p-4 sm:p-6 xl:p-8">
-        <header class="flex items-start gap-4">
+    <div class="workspace-page">
+        <PageHeader
+            title="Novo cliente"
+            eyebrow="Um atendimento mais próximo"
+            description="Guarde os dados de contato e o endereço para facilitar os próximos pedidos."
+        >
             <Button as-child variant="outline" size="icon" class="rounded-xl">
                 <Link :href="indexUrl" aria-label="Voltar para clientes">
                     <ArrowLeft class="size-4" />
                 </Link>
             </Button>
-            <div>
-                <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
-                    Novo cliente
-                </h1>
-                <p class="mt-1 text-sm text-muted-foreground">
-                    Cadastre os dados que serão usados para identificar e
-                    entregar os pedidos.
-                </p>
-            </div>
-        </header>
+        </PageHeader>
 
         <form class="space-y-6" @submit.prevent="submit">
-            <section
-                class="space-y-5 rounded-2xl border bg-card p-5 shadow-sm sm:p-6"
-            >
+            <section class="workspace-panel space-y-5 p-5 sm:p-6">
                 <div class="grid gap-5 sm:grid-cols-2">
                     <div class="grid gap-2">
                         <Label for="customer-name">Nome</Label>

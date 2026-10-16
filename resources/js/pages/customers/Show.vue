@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import PageHeader from '@/components/workspace/PageHeader.vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import {
     ArrowLeft,
     MapPin,
-    Phone,
     ReceiptText,
     ShoppingBag,
     Trophy,
@@ -73,30 +73,22 @@ defineOptions({ layout: () => ({ breadcrumbs: [], showCreateOrder: true }) });
     <Head :title="customer.name" />
     <OrderDetailsDialog :order="selectedOrder" @close="selectedOrder = null" />
 
-    <div
-        class="mx-auto flex w-full max-w-[1400px] flex-col gap-6 p-4 sm:p-6 xl:p-8"
-    >
-        <header class="flex items-start gap-4">
+    <div class="workspace-page">
+        <PageHeader
+            :title="customer.name"
+            eyebrow="Perfil do cliente"
+            :description="customer.phone"
+        >
             <Link
                 :href="indexUrl"
                 class="grid size-10 shrink-0 place-items-center rounded-xl border bg-background hover:bg-accent"
                 aria-label="Voltar para clientes"
                 ><ArrowLeft class="size-4"
             /></Link>
-            <div>
-                <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
-                    {{ customer.name }}
-                </h1>
-                <p
-                    class="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground"
-                >
-                    <Phone class="size-4" />{{ customer.phone }}
-                </p>
-            </div>
-        </header>
+        </PageHeader>
 
         <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <article class="rounded-2xl border bg-card p-5 shadow-sm">
+            <article class="workspace-panel p-5">
                 <ReceiptText class="size-5 text-primary" />
                 <p class="mt-4 text-sm text-muted-foreground">
                     Pedidos realizados
@@ -105,7 +97,7 @@ defineOptions({ layout: () => ({ breadcrumbs: [], showCreateOrder: true }) });
                     {{ summary.ordersCount }}
                 </p>
             </article>
-            <article class="rounded-2xl border bg-card p-5 shadow-sm">
+            <article class="workspace-panel p-5">
                 <ShoppingBag class="size-5 text-primary" />
                 <p class="mt-4 text-sm text-muted-foreground">
                     Compras finalizadas
@@ -114,14 +106,14 @@ defineOptions({ layout: () => ({ breadcrumbs: [], showCreateOrder: true }) });
                     {{ summary.finalizedOrdersCount }}
                 </p>
             </article>
-            <article class="rounded-2xl border bg-card p-5 shadow-sm">
+            <article class="workspace-panel p-5">
                 <WalletCards class="size-5 text-primary" />
                 <p class="mt-4 text-sm text-muted-foreground">Total gasto</p>
                 <p class="mt-1 text-2xl font-semibold">
                     {{ currency.format(Number(summary.totalSpent)) }}
                 </p>
             </article>
-            <article class="rounded-2xl border bg-card p-5 shadow-sm">
+            <article class="workspace-panel p-5">
                 <Trophy class="size-5 text-primary" />
                 <p class="mt-4 text-sm text-muted-foreground">
                     Produto mais pedido
@@ -141,7 +133,7 @@ defineOptions({ layout: () => ({ breadcrumbs: [], showCreateOrder: true }) });
             </article>
         </section>
 
-        <section class="rounded-2xl border bg-card p-5 shadow-sm">
+        <section class="workspace-panel p-5">
             <h2 class="flex items-center gap-2 font-semibold">
                 <MapPin class="size-4 text-primary" />Endereço cadastrado
             </h2>

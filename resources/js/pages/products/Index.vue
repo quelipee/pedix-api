@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { Head, Link, router, useHttp, usePage } from '@inertiajs/vue3';
-import { PackageOpen, Plus, Search } from '@lucide/vue';
+import { ArrowUpRight, PackageOpen, Plus, Search } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import ProductCategoryDialog from '@/components/products/ProductCategoryDialog.vue';
 import { Button } from '@/components/ui/button';
+import PageHeader from '@/components/workspace/PageHeader.vue';
+import { categoryIcon } from '@/lib/productCategories';
 import {
     Dialog,
     DialogContent,
@@ -150,19 +152,12 @@ defineOptions({
 <template>
     <Head title="Cardápio" />
 
-    <div
-        class="mx-auto flex w-full max-w-[1600px] flex-col gap-6 p-4 sm:p-6 xl:p-8"
-    >
-        <header class="flex flex-wrap items-end justify-between gap-4">
-            <div class="space-y-1">
-                <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
-                    Cardápio
-                </h1>
-                <p class="text-sm text-muted-foreground">
-                    Escolha uma categoria para visualizar e gerenciar seus
-                    produtos.
-                </p>
-            </div>
+    <div class="workspace-page">
+        <PageHeader
+            title="Cardápio"
+            eyebrow="O sabor da sua casa"
+            description="Organize as categorias, personalize seus itens e mantenha tudo pronto para vender."
+        >
             <div class="flex flex-wrap gap-2">
                 <Button
                     type="button"
@@ -181,7 +176,22 @@ defineOptions({
                     Novo item
                 </Link>
             </div>
-        </header>
+        </PageHeader>
+
+        <div
+            class="flex flex-wrap items-center gap-3 text-xs text-muted-foreground"
+        >
+            <span class="rounded-full border bg-card px-3 py-1.5"
+                >{{ categories.length }} categorias</span
+            >
+            <span>{{ products.length }} itens cadastrados</span>
+            <span class="inline-flex items-center gap-1.5"
+                ><span class="size-1.5 rounded-full bg-primary" />{{
+                    products.filter(({ active }) => active).length
+                }}
+                disponíveis</span
+            >
+        </div>
 
         <section
             v-if="productsByCategory.length"
@@ -191,21 +201,30 @@ defineOptions({
                 v-for="[category, categoryProducts] in productsByCategory"
                 :key="category"
                 type="button"
-                class="group flex min-h-44 flex-col justify-between rounded-2xl border bg-card p-5 text-left text-card-foreground shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+                class="workspace-panel group flex min-h-40 flex-col justify-between p-5 text-left transition duration-200 hover:-translate-y-1 hover:border-primary/30 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
                 @click="selectedCategory = category"
             >
-                <span
-                    class="grid size-11 place-items-center rounded-xl bg-primary/10 text-primary"
-                >
-                    <PackageOpen class="size-5" />
+                <span class="flex w-full items-center justify-between">
+                    <span
+                        class="grid size-11 place-items-center rounded-2xl bg-secondary text-secondary-foreground"
+                    >
+                        <component
+                            :is="categoryIcon(category)"
+                            class="size-5"
+                        />
+                    </span>
+                    <ArrowUpRight
+                        class="size-4 text-muted-foreground transition group-hover:text-primary"
+                    />
                 </span>
-                <span class="mt-6 block w-full">
+                <span class="mt-5 block w-full">
                     <span
                         class="flex items-end justify-between gap-3 font-semibold"
                     >
                         <span>{{ category }}</span>
-                        <span class="text-sm font-medium text-primary"
-                            >Ver itens</span
+                        <span
+                            class="rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
+                            >{{ categoryProducts.length }}</span
                         >
                     </span>
                     <span class="mt-2 block text-sm text-muted-foreground">

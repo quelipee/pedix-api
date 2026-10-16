@@ -56,6 +56,7 @@ export type TeamPermissions = {
     canViewCashRegister: boolean;
     canManageCashRegister: boolean;
     canViewReports: boolean;
+    canManageBilling: boolean;
     canUpdateTeam: boolean;
     canDeleteTeam: boolean;
     canAddMember: boolean;

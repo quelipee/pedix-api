@@ -182,6 +182,7 @@ trait HasTeams
             canViewCashRegister: $role?->hasPermission(TeamPermission::ViewCashRegister) ?? false,
             canManageCashRegister: $role?->hasPermission(TeamPermission::ManageCashRegister) ?? false,
             canViewReports: $role?->hasPermission(TeamPermission::ViewReports) ?? false,
+            canManageBilling: $role?->hasPermission(TeamPermission::ManageBilling) ?? false,
             canUpdateTeam: $role?->hasPermission(TeamPermission::UpdateTeam) ?? false,
             canDeleteTeam: $role?->hasPermission(TeamPermission::DeleteTeam) ?? false,
             canAddMember: $role?->hasPermission(TeamPermission::AddMember) ?? false,

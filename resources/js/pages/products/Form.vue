@@ -2,6 +2,7 @@
 import { Head, Link, router, useHttp, usePage } from '@inertiajs/vue3';
 import { ArrowLeft, Plus, ShoppingBag, X } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import PageHeader from '@/components/workspace/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import ProductCategoryDialog from '@/components/products/ProductCategoryDialog.vue';
 import {
@@ -222,23 +223,17 @@ defineOptions({
 </script>
 
 <template>
-    <div
-        class="mx-auto flex w-full max-w-[1600px] flex-col gap-6 p-4 sm:p-6 xl:p-8"
-    >
+    <div class="workspace-page">
         <Head :title="product ? 'Editar item' : 'Novo item'" />
-        <header class="flex flex-wrap items-center justify-between gap-4">
-            <div class="space-y-1">
-                <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
-                    {{ product ? 'Editar item' : 'Novo item' }}
-                </h1>
-                <p class="text-sm text-muted-foreground">
-                    {{
-                        product
-                            ? 'Atualize as informações deste item do cardápio.'
-                            : 'Cadastre um produto para usar no seu cardápio e nos pedidos.'
-                    }}
-                </p>
-            </div>
+        <PageHeader
+            :title="product ? 'Editar item' : 'Novo item'"
+            eyebrow="Seu cardápio, do seu jeito"
+            :description="
+                product
+                    ? 'Ajuste os detalhes, ingredientes e opções deste item.'
+                    : 'Um bom pedido começa com um cardápio bem cuidado.'
+            "
+        >
             <Link
                 :href="catalogUrl"
                 class="inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
@@ -246,16 +241,14 @@ defineOptions({
                 <ArrowLeft class="size-4" />
                 Voltar ao cardápio
             </Link>
-        </header>
+        </PageHeader>
 
         <form
             class="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]"
             @submit.prevent="submitProduct"
         >
             <div class="space-y-5">
-                <section
-                    class="space-y-5 rounded-2xl border bg-card p-5 text-card-foreground shadow-sm sm:p-6"
-                >
+                <section class="workspace-panel space-y-5 p-5 sm:p-6">
                     <div>
                         <h2 class="font-semibold">Informações do item</h2>
                         <p class="mt-1 text-sm text-muted-foreground">
@@ -373,9 +366,7 @@ defineOptions({
                     </div>
                 </section>
 
-                <section
-                    class="space-y-5 rounded-2xl border bg-card p-5 text-card-foreground shadow-sm sm:p-6"
-                >
+                <section class="workspace-panel space-y-5 p-5 sm:p-6">
                     <div>
                         <h2 class="font-semibold">Ingredientes</h2>
                         <p class="mt-1 text-sm text-muted-foreground">
@@ -446,9 +437,7 @@ defineOptions({
                     </p>
                 </section>
 
-                <section
-                    class="space-y-5 rounded-2xl border bg-card p-5 text-card-foreground shadow-sm sm:p-6"
-                >
+                <section class="workspace-panel space-y-5 p-5 sm:p-6">
                     <div
                         class="flex flex-wrap items-start justify-between gap-3"
                     >
@@ -609,9 +598,7 @@ defineOptions({
             </div>
 
             <aside class="space-y-5">
-                <section
-                    class="rounded-2xl border bg-card p-5 text-card-foreground shadow-sm sm:p-6"
-                >
+                <section class="workspace-panel p-5 sm:p-6">
                     <h2 class="font-semibold">Prévia do item</h2>
                     <div class="mt-5 rounded-xl border bg-background/40 p-4">
                         <span

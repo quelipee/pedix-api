@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Laravel\Cashier\Billable;
+use Laravel\Cashier\Subscription;
 
 /**
  * @property int $id
@@ -22,6 +24,13 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
+ * @property string|null $stripe_id
+ * @property Carbon|null $trial_ends_at
+ * @property string|null $billing_checkout_id
+ * @property string|null $billing_checkout_token
+ * @property string|null $billing_checkout_plan
+ * @property Carbon|null $billing_checkout_expires_at
+ * @property-read Collection<int, Subscription> $subscriptions
  * @property-read Collection<int, TeamInvitation> $invitations
  * @property-read Collection<int, Courier> $couriers
  * @property-read Collection<int, CashRegister> $cashRegisters
@@ -36,7 +45,33 @@ use Illuminate\Support\Carbon;
 class Team extends Model
 {
     /** @use HasFactory<TeamFactory> */
-    use GeneratesUniqueTeamSlugs, HasFactory, SoftDeletes;
+    use Billable, GeneratesUniqueTeamSlugs, HasFactory, SoftDeletes;
+
+    protected $hidden = [
+        'stripe_id', 'pm_type', 'pm_last_four', 'trial_ends_at',
+        'billing_checkout_id', 'billing_checkout_token',
+        'billing_checkout_plan', 'billing_checkout_expires_at',
+    ];
+
+    public function stripeEmail(): ?string
+    {
+        $owner = $this->owner();
+
+        return $owner instanceof User ? $owner->email : null;
+    }
+
+    public function hasOngoingSubscription(): bool
+    {
+        return $this->subscriptions()->where(function ($query): void {
+            $query->whereNotIn('stripe_status', ['canceled', 'incomplete_expired'])
+                ->orWhere('ends_at', '>', now());
+        })->exists();
+    }
+
+    public function hasPendingCheckout(): bool
+    {
+        return $this->billing_checkout_token !== null && $this->billing_checkout_expires_at?->isFuture() === true;
+    }
 
     /**
      * Bootstrap the model and its traits.
@@ -146,6 +181,8 @@ class Team extends Model
     {
         return [
             'is_personal' => 'boolean',
+            'trial_ends_at' => 'datetime',
+            'billing_checkout_expires_at' => 'datetime',
         ];
     }
 

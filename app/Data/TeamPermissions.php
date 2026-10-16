@@ -19,6 +19,7 @@ readonly class TeamPermissions
         public bool $canViewCashRegister,
         public bool $canManageCashRegister,
         public bool $canViewReports,
+        public bool $canManageBilling,
         public bool $canUpdateTeam,
         public bool $canDeleteTeam,
         public bool $canAddMember,

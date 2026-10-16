@@ -9,16 +9,22 @@ type Props = {
     breadcrumbs?: BreadcrumbItem[];
     products?: { id: number; name: string; price: string }[];
     showCreateOrder?: boolean;
+    fitViewport?: boolean;
 };
 
 withDefaults(defineProps<Props>(), {
     breadcrumbs: () => [],
     showCreateOrder: true,
+    fitViewport: false,
 });
 </script>
 
 <template>
-    <AppShell variant="header">
+    <AppShell
+        variant="header"
+        class="pedix-workspace"
+        :class="{ 'workspace-fit-viewport': fitViewport }"
+    >
         <AppHeader
             :breadcrumbs="breadcrumbs"
             :products="products"

@@ -22,6 +22,7 @@ enum TeamPermission: string
     case ViewCashRegister = 'cash-register:view';
     case ManageCashRegister = 'cash-register:manage';
     case ViewReports = 'reports:view';
+    case ManageBilling = 'billing:manage';
 
     case UpdateTeam = 'team:update';
     case DeleteTeam = 'team:delete';

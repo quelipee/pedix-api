@@ -11,6 +11,8 @@ import {
     WalletCards,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import MetricCard from '@/components/workspace/MetricCard.vue';
+import PageHeader from '@/components/workspace/PageHeader.vue';
 import { index as reportsIndex } from '@/routes/reports';
 import type { Team } from '@/types';
 
@@ -138,24 +140,15 @@ defineOptions({ layout: () => ({ breadcrumbs: [], showCreateOrder: true }) });
 <template>
     <Head title="Relatórios" />
 
-    <div
-        class="mx-auto flex w-full max-w-[1600px] flex-col gap-6 p-4 sm:p-6 xl:p-8"
-    >
-        <header class="flex flex-wrap items-end justify-between gap-4">
-            <div>
-                <div class="flex items-center gap-2">
-                    <ChartNoAxesCombined class="size-7 text-primary" />
-                    <h1
-                        class="text-2xl font-semibold tracking-tight sm:text-3xl"
-                    >
-                        Relatórios
-                    </h1>
-                </div>
-                <p class="mt-1 text-sm text-muted-foreground">
-                    Acompanhe o desempenho das vendas finalizadas.
-                </p>
-            </div>
-            <div class="flex gap-2 overflow-x-auto">
+    <div class="workspace-page">
+        <PageHeader
+            title="Relatórios"
+            eyebrow="Decisões com mais clareza"
+            description="Um olhar sobre o que sua casa vende. Os resultados consideram as vendas finalizadas."
+        >
+            <div
+                class="flex max-w-full gap-1 overflow-x-auto rounded-xl border bg-card p-1"
+            >
                 <button
                     v-for="option in periodOptions"
                     :key="option.value"
@@ -171,11 +164,11 @@ defineOptions({ layout: () => ({ breadcrumbs: [], showCreateOrder: true }) });
                     {{ option.label }}
                 </button>
             </div>
-        </header>
+        </PageHeader>
 
         <form
             v-if="selectedPeriod === 'custom'"
-            class="flex flex-wrap items-end gap-3 rounded-2xl border bg-card p-4 shadow-sm"
+            class="workspace-panel flex flex-wrap items-end gap-3 p-4"
             @submit.prevent="applyCustomPeriod"
         >
             <div class="grid gap-1.5">
@@ -222,48 +215,47 @@ defineOptions({ layout: () => ({ breadcrumbs: [], showCreateOrder: true }) });
         </form>
 
         <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-            <article class="rounded-2xl border bg-card p-5 shadow-sm">
-                <Banknote class="size-5 text-emerald-600" />
-                <p class="mt-4 text-sm text-muted-foreground">Faturamento</p>
-                <p class="mt-1 text-2xl font-semibold tabular-nums">
-                    {{ money(report.summary.revenue) }}
-                </p>
-            </article>
-            <article class="rounded-2xl border bg-card p-5 shadow-sm">
-                <ReceiptText class="size-5 text-primary" />
-                <p class="mt-4 text-sm text-muted-foreground">
-                    Vendas finalizadas
-                </p>
-                <p class="mt-1 text-2xl font-semibold tabular-nums">
-                    {{ report.summary.orders }}
-                </p>
-            </article>
-            <article class="rounded-2xl border bg-card p-5 shadow-sm">
-                <WalletCards class="size-5 text-violet-600" />
-                <p class="mt-4 text-sm text-muted-foreground">Ticket médio</p>
-                <p class="mt-1 text-2xl font-semibold tabular-nums">
-                    {{ money(report.summary.averageTicket) }}
-                </p>
-            </article>
-            <article class="rounded-2xl border bg-card p-5 shadow-sm">
-                <Truck class="size-5 text-amber-600" />
-                <p class="mt-4 text-sm text-muted-foreground">
-                    Taxas de entrega
-                </p>
-                <p class="mt-1 text-2xl font-semibold tabular-nums">
-                    {{ money(report.summary.deliveryFees) }}
-                </p>
-            </article>
-            <article class="rounded-2xl border bg-card p-5 shadow-sm">
-                <UserPlus class="size-5 text-sky-600" />
-                <p class="mt-4 text-sm text-muted-foreground">Novos clientes</p>
-                <p class="mt-1 text-2xl font-semibold tabular-nums">
-                    {{ report.summary.newCustomers }}
-                </p>
-            </article>
+            <MetricCard
+                label="Faturamento"
+                :value="money(report.summary.revenue)"
+                detail="Vendas no período"
+            >
+                <template #icon><Banknote class="size-4" /></template>
+            </MetricCard>
+            <MetricCard
+                label="Vendas finalizadas"
+                :value="report.summary.orders"
+                detail="Pedidos concluídos"
+            >
+                <template #icon><ReceiptText class="size-4" /></template>
+            </MetricCard>
+            <MetricCard
+                label="Ticket médio"
+                :value="money(report.summary.averageTicket)"
+                tone="orange"
+                detail="Valor médio por pedido"
+            >
+                <template #icon><WalletCards class="size-4" /></template>
+            </MetricCard>
+            <MetricCard
+                label="Taxas de entrega"
+                :value="money(report.summary.deliveryFees)"
+                tone="amber"
+                detail="Taxas das vendas finalizadas"
+            >
+                <template #icon><Truck class="size-4" /></template>
+            </MetricCard>
+            <MetricCard
+                label="Novos clientes"
+                :value="report.summary.newCustomers"
+                tone="sky"
+                detail="Cadastrados no período"
+            >
+                <template #icon><UserPlus class="size-4" /></template>
+            </MetricCard>
         </section>
 
-        <section class="rounded-2xl border bg-card p-5 shadow-sm sm:p-6">
+        <section class="workspace-panel p-5 sm:p-6">
             <div class="flex items-center gap-2">
                 <CalendarDays class="size-5 text-primary" />
                 <div>
@@ -273,7 +265,10 @@ defineOptions({ layout: () => ({ breadcrumbs: [], showCreateOrder: true }) });
                     </p>
                 </div>
             </div>
-            <div class="mt-6 overflow-x-auto pb-2">
+            <div
+                v-if="report.dailySales.some((day) => day.orders > 0)"
+                class="mt-6 overflow-x-auto pb-2"
+            >
                 <div class="flex h-64 min-w-max items-end gap-3 border-b px-1">
                     <div
                         v-for="day in report.dailySales"
@@ -287,7 +282,7 @@ defineOptions({ layout: () => ({ breadcrumbs: [], showCreateOrder: true }) });
                             </p>
                         </div>
                         <div
-                            class="w-8 rounded-t-md bg-primary/85 transition-all"
+                            class="w-8 rounded-t-lg bg-gradient-to-t from-primary to-[#6eaa75] transition-all hover:opacity-80"
                             :style="{
                                 height: `${Math.max((Number(day.revenue) / maxDailyRevenue) * 150, day.orders ? 8 : 2)}px`,
                             }"
@@ -298,10 +293,22 @@ defineOptions({ layout: () => ({ breadcrumbs: [], showCreateOrder: true }) });
                     </div>
                 </div>
             </div>
+            <div
+                v-else
+                class="mt-5 flex min-h-44 flex-col items-center justify-center rounded-xl border border-dashed bg-muted/30 p-6 text-center"
+            >
+                <ChartNoAxesCombined class="size-7 text-primary/50" />
+                <p class="mt-3 text-sm font-medium">
+                    Ainda sem vendas neste período
+                </p>
+                <p class="mt-1 text-xs text-muted-foreground">
+                    As vendas finalizadas aparecerão neste gráfico.
+                </p>
+            </div>
         </section>
 
         <section class="grid gap-4 lg:grid-cols-2">
-            <article class="rounded-2xl border bg-card p-5 shadow-sm sm:p-6">
+            <article class="workspace-panel p-5 sm:p-6">
                 <h2 class="font-semibold">Vendas por pagamento</h2>
                 <div class="mt-5 space-y-4">
                     <div
@@ -328,7 +335,7 @@ defineOptions({ layout: () => ({ breadcrumbs: [], showCreateOrder: true }) });
                 </div>
             </article>
 
-            <article class="rounded-2xl border bg-card p-5 shadow-sm sm:p-6">
+            <article class="workspace-panel p-5 sm:p-6">
                 <h2 class="font-semibold">Pedidos por modalidade</h2>
                 <div class="mt-5 grid gap-3 sm:grid-cols-3">
                     <div
@@ -350,7 +357,7 @@ defineOptions({ layout: () => ({ breadcrumbs: [], showCreateOrder: true }) });
             </article>
         </section>
 
-        <section class="rounded-2xl border bg-card p-5 shadow-sm sm:p-6">
+        <section class="workspace-panel p-5 sm:p-6">
             <div class="flex items-center gap-2">
                 <PackageCheck class="size-5 text-primary" />
                 <div>

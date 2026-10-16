@@ -12,6 +12,7 @@ import {
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import CustomerCreateDialog from '@/components/customers/CustomerCreateDialog.vue';
 import CustomerDetailsDialog from '@/components/customers/CustomerDetailsDialog.vue';
+import PageHeader from '@/components/workspace/PageHeader.vue';
 import {
     index as customersIndex,
     show as showCustomer,
@@ -98,18 +99,12 @@ defineOptions({ layout: () => ({ breadcrumbs: [], showCreateOrder: true }) });
         @close="selectedCustomer = null"
     />
 
-    <div
-        class="mx-auto flex w-full max-w-[1600px] flex-col gap-6 p-4 sm:p-6 xl:p-8"
-    >
-        <header class="flex flex-wrap items-end justify-between gap-4">
-            <div>
-                <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
-                    Clientes
-                </h1>
-                <p class="mt-1 text-sm text-muted-foreground">
-                    Cadastre clientes e acompanhe o histórico de compras.
-                </p>
-            </div>
+    <div class="workspace-page">
+        <PageHeader
+            title="Clientes"
+            eyebrow="Quem escolhe a sua casa"
+            description="Conheça os favoritos de cada cliente e faça cada atendimento contar."
+        >
             <button
                 type="button"
                 class="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
@@ -117,10 +112,12 @@ defineOptions({ layout: () => ({ breadcrumbs: [], showCreateOrder: true }) });
             >
                 <Plus class="size-4" /> Novo cliente
             </button>
-        </header>
+        </PageHeader>
 
-        <section class="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
-            <div>
+        <section
+            class="workspace-panel flex flex-wrap items-center justify-between gap-4 p-4"
+        >
+            <div class="w-full max-w-lg">
                 <label class="relative flex-1">
                     <Search
                         class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
@@ -133,6 +130,9 @@ defineOptions({ layout: () => ({ breadcrumbs: [], showCreateOrder: true }) });
                     />
                 </label>
             </div>
+            <span class="text-xs font-medium text-muted-foreground"
+                >{{ customers.total }} clientes encontrados</span
+            >
         </section>
 
         <section
@@ -143,7 +143,7 @@ defineOptions({ layout: () => ({ breadcrumbs: [], showCreateOrder: true }) });
                 v-for="customer in customers.data"
                 :key="customer.id"
                 type="button"
-                class="group rounded-2xl border bg-card p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+                class="workspace-panel group p-5 text-left transition duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
                 @click="selectedCustomer = customer"
             >
                 <div class="flex items-start justify-between gap-4">

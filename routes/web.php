@@ -2,6 +2,8 @@
 
 use App\Enums\TeamPermission;
 use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\Billing\SubscriptionController;
+use App\Http\Controllers\Billing\SubscriptionPageController;
 use App\Http\Controllers\CashRegisters\CashRegisterController;
 use App\Http\Controllers\CashRegisters\CashRegisterPageController;
 use App\Http\Controllers\Couriers\CourierController;
@@ -22,11 +24,18 @@ use App\Http\Controllers\Products\ProductCategoryController;
 use App\Http\Controllers\Products\ProductController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Teams\TeamInvitationController;
+use App\Http\Middleware\EnsureStripeBillingConfigured;
+use App\Http\Middleware\EnsureStripeWebhookConfigured;
 use App\Http\Middleware\EnsureTeamMembership;
 use App\Http\Middleware\EnsureTeamPermission;
 use Illuminate\Support\Facades\Route;
+use Laravel\Cashier\Http\Controllers\WebhookController;
 
 Route::inertia('/', 'Welcome')->name('home');
+
+Route::post('stripe/webhook', [WebhookController::class, 'handleWebhook'])
+    ->middleware(EnsureStripeWebhookConfigured::class)
+    ->name('cashier.webhook');
 
 Route::get('auth/google/redirect', [GoogleAuthController::class, 'redirectToGoogle'])->name('google.redirect');
 Route::get('auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])->name('google.callback');
@@ -38,6 +47,14 @@ Route::prefix('{current_team}')
         EnsureTeamMembership::class,
     ]))
     ->group(function () {
+        Route::middleware(EnsureTeamPermission::class.':'.TeamPermission::ManageBilling->value)->group(function (): void {
+            Route::get('billing', SubscriptionPageController::class)->name('billing.index');
+            Route::middleware([EnsureStripeBillingConfigured::class, 'throttle:6,1'])->group(function (): void {
+                Route::post('billing/checkout', [SubscriptionController::class, 'checkout'])->name('billing.checkout');
+                Route::post('billing/portal', [SubscriptionController::class, 'portal'])->name('billing.portal');
+            });
+        });
+
         Route::get('dashboard', DashboardController::class)
             ->middleware(EnsureTeamPermission::class.':'.TeamPermission::ViewDashboard->value)
             ->name('dashboard');

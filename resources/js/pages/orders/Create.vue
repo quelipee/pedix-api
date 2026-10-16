@@ -2,6 +2,7 @@
 import { Head, Link, router, useHttp, usePage } from '@inertiajs/vue3';
 import { ArrowLeft, Minus, Plus, ShoppingBag } from '@lucide/vue';
 import { computed, onMounted, ref, watch } from 'vue';
+import PageHeader from '@/components/workspace/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -12,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { formatMoneyInput, parseMoneyInput } from '@/lib/money';
+import { categoryIcon } from '@/lib/productCategories';
 import { manage as manageOrders, store as storeOrder } from '@/routes/orders';
 import { dashboard } from '@/routes';
 import type { Team } from '@/types';
@@ -526,18 +528,12 @@ defineOptions({
 <template>
     <Head title="Novo pedido" />
 
-    <div
-        class="mx-auto flex w-full max-w-[1600px] flex-col gap-6 p-4 sm:p-6 xl:p-8"
-    >
-        <div class="flex flex-wrap items-center justify-between gap-4">
-            <div class="space-y-1">
-                <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
-                    Novo pedido
-                </h1>
-                <p class="text-sm text-muted-foreground">
-                    Escolha os produtos e personalize cada item.
-                </p>
-            </div>
+    <div class="workspace-page">
+        <PageHeader
+            title="Novo pedido"
+            eyebrow="Vamos servir algo bom"
+            description="Escolha uma categoria, adicione os favoritos e personalize cada detalhe."
+        >
             <Link
                 :href="dashboardUrl"
                 class="inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
@@ -545,16 +541,14 @@ defineOptions({
                 <ArrowLeft class="size-4" />
                 Voltar à visão geral
             </Link>
-        </div>
+        </PageHeader>
 
         <form
             class="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_360px]"
             @submit.prevent="submitOrder"
         >
             <div class="space-y-5">
-                <section
-                    class="rounded-2xl border bg-card p-5 text-card-foreground shadow-sm sm:p-6"
-                >
+                <section class="workspace-panel p-5 sm:p-6">
                     <div class="mb-5">
                         <h2 class="font-semibold">Cardápio</h2>
                         <p class="mt-1 text-sm text-muted-foreground">
@@ -564,7 +558,7 @@ defineOptions({
 
                     <div
                         v-if="productsByCategory.length"
-                        class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+                        class="grid grid-cols-2 gap-3 lg:grid-cols-3"
                     >
                         <button
                             v-for="[
@@ -573,17 +567,20 @@ defineOptions({
                             ] in productsByCategory"
                             :key="category"
                             type="button"
-                            class="group flex min-h-32 flex-col justify-between rounded-xl border bg-background/40 p-4 text-left transition-colors hover:border-primary/50 hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+                            class="group flex min-h-32 flex-col justify-between rounded-2xl border bg-muted/30 p-4 text-left transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-secondary/60 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
                             :aria-label="`Abrir categoria ${category} com ${categoryProducts.length} produtos`"
                             @click="selectedCategory = category"
                         >
                             <span
                                 class="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary"
                             >
-                                <ShoppingBag class="size-5" />
+                                <component
+                                    :is="categoryIcon(category)"
+                                    class="size-5"
+                                />
                             </span>
                             <span
-                                class="mt-5 flex w-full items-end justify-between gap-3"
+                                class="mt-5 flex w-full flex-wrap items-end justify-between gap-2"
                             >
                                 <span>
                                     <span class="block font-semibold">{{
@@ -716,7 +713,7 @@ defineOptions({
 
                 <section
                     v-if="selectedProducts.length"
-                    class="rounded-2xl border bg-card p-5 text-card-foreground shadow-sm sm:p-6"
+                    class="workspace-panel p-5 sm:p-6"
                 >
                     <div class="mb-5">
                         <h2 class="font-semibold">Personalização dos itens</h2>
@@ -835,11 +832,14 @@ defineOptions({
                 </section>
             </div>
 
-            <aside
-                class="space-y-4 rounded-2xl border bg-card p-5 text-card-foreground shadow-sm xl:sticky xl:top-24"
-            >
-                <div>
-                    <h2 class="font-semibold">Resumo do pedido</h2>
+            <aside class="workspace-panel space-y-4 p-5 xl:sticky xl:top-36">
+                <div
+                    class="-mx-5 -mt-5 rounded-t-[1.25rem] border-b bg-secondary/50 px-5 py-5"
+                >
+                    <p class="workspace-eyebrow mb-2">Sua comanda</p>
+                    <h2 class="text-lg font-semibold tracking-tight">
+                        Resumo do pedido
+                    </h2>
                     <p class="mt-1 text-sm text-muted-foreground">
                         {{ itemCount }}
                         {{
@@ -903,7 +903,9 @@ defineOptions({
                     </div>
                 </div>
 
-                <div class="flex items-center justify-between border-t pt-4">
+                <div
+                    class="flex items-center justify-between rounded-xl border border-primary/10 bg-secondary/50 p-4"
+                >
                     <span class="font-medium">Total</span>
                     <span class="text-xl font-semibold tabular-nums">
                         {{ currency.format(total) }}

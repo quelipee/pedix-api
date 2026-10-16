@@ -5,7 +5,6 @@ import {
     ArrowRight,
     Ban,
     Bike,
-    ClipboardList,
     Clock3,
     CookingPot,
     PackageCheck,
@@ -18,6 +17,7 @@ import DispatchOrderDialog from '@/components/DispatchOrderDialog.vue';
 import CancelOrderDialog from '@/components/CancelOrderDialog.vue';
 import OrderDetailsDialog from '@/components/OrderDetailsDialog.vue';
 import { Button } from '@/components/ui/button';
+import PageHeader from '@/components/workspace/PageHeader.vue';
 import {
     advance as advanceOrder,
     history as orderHistory,
@@ -70,7 +70,7 @@ const columnDefinitions: {
     {
         status: 'pronto',
         title: 'Prontos',
-        description: 'Aguardando retirada',
+        description: 'Para servir ou entregar',
         emptyMessage: 'Nenhum pedido pronto no momento.',
     },
 ];
@@ -202,7 +202,11 @@ function columnIcon(status: KitchenStatus) {
 }
 
 defineOptions({
-    layout: () => ({ breadcrumbs: [], showCreateOrder: true }),
+    layout: () => ({
+        breadcrumbs: [],
+        showCreateOrder: true,
+        fitViewport: true,
+    }),
 });
 </script>
 
@@ -226,25 +230,12 @@ defineOptions({
         @close="dispatchingOrder = null"
     />
 
-    <div
-        class="mx-auto flex w-full max-w-[1800px] flex-col gap-5 p-4 sm:p-6 xl:p-8"
-    >
-        <header class="flex flex-wrap items-end justify-between gap-4">
-            <div>
-                <div class="flex items-center gap-2">
-                    <ClipboardList class="size-7 text-primary" />
-                    <h1
-                        class="text-2xl font-semibold tracking-tight sm:text-3xl"
-                    >
-                        Pedidos
-                    </h1>
-                </div>
-                <p class="mt-1 text-sm text-muted-foreground">
-                    {{ activeOrderCount }} pedidos ativos · atualização
-                    automática a cada 15 segundos · atualizado às
-                    {{ refreshedTime }}
-                </p>
-            </div>
+    <div class="workspace-page workspace-order-page">
+        <PageHeader
+            title="Pedidos"
+            eyebrow="Da comanda à entrega"
+            :description="`${activeOrderCount} pedidos ativos · atualização a cada 15 segundos · atualizado às ${refreshedTime}`"
+        >
             <div class="flex flex-wrap gap-2">
                 <Button as-child variant="outline" class="gap-2 rounded-xl">
                     <Link :href="historyUrl">
@@ -266,7 +257,7 @@ defineOptions({
                     Atualizar agora
                 </Button>
             </div>
-        </header>
+        </PageHeader>
 
         <p
             v-if="advanceError"
@@ -276,18 +267,21 @@ defineOptions({
             {{ advanceError }}
         </p>
 
-        <main class="grid items-start gap-4 xl:grid-cols-3">
+        <div
+            class="workspace-order-board grid items-start gap-4 xl:grid-cols-3"
+        >
             <section
                 v-for="column in columnDefinitions"
                 :key="column.status"
-                class="overflow-hidden rounded-2xl border bg-card shadow-sm"
+                class="workspace-order-column"
+                :data-stage="column.status"
             >
                 <header
                     class="flex items-center justify-between gap-3 border-b p-4"
                 >
                     <div class="flex min-w-0 items-center gap-3">
                         <span
-                            class="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"
+                            class="workspace-stage-icon grid size-10 shrink-0 place-items-center rounded-xl"
                         >
                             <component
                                 :is="columnIcon(column.status)"
@@ -302,19 +296,19 @@ defineOptions({
                         </div>
                     </div>
                     <span
-                        class="rounded-full bg-muted px-2.5 py-1 text-sm font-semibold tabular-nums"
+                        class="workspace-stage-icon rounded-lg px-2.5 py-1 text-sm font-semibold tabular-nums"
                     >
                         {{ counts[column.status] }}
                     </span>
                 </header>
 
                 <div
-                    class="max-h-[calc(100vh-14rem)] space-y-3 overflow-y-auto p-3"
+                    class="workspace-order-list max-h-[calc(100svh-19rem)] min-h-48 space-y-3 overflow-y-auto overscroll-contain p-3"
                 >
                     <article
                         v-for="order in columns[column.status]"
                         :key="order.id"
-                        class="rounded-xl border bg-background p-4"
+                        class="workspace-order-ticket"
                     >
                         <div class="flex items-start justify-between gap-3">
                             <button
@@ -322,7 +316,7 @@ defineOptions({
                                 class="text-left focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
                                 @click="selectedOrder = order"
                             >
-                                <span class="text-lg font-semibold">
+                                <span class="text-base font-semibold">
                                     Pedido #{{ order.id }}
                                 </span>
                                 <span
@@ -403,10 +397,12 @@ defineOptions({
                                     size="sm"
                                     variant="outline"
                                     class="gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                    :aria-label="`Cancelar pedido #${order.id}`"
+                                    title="Cancelar pedido"
                                     @click="cancellingOrder = order"
                                 >
                                     <Ban class="size-4" />
-                                    Cancelar
+                                    <span class="sr-only">Cancelar</span>
                                 </Button>
                                 <Button
                                     v-if="
@@ -471,6 +467,6 @@ defineOptions({
                     </p>
                 </div>
             </section>
-        </main>
+        </div>
     </div>
 </template>

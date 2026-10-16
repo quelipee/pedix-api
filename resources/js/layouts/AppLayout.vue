@@ -6,6 +6,7 @@ const { breadcrumbs = [], showCreateOrder = true } = defineProps<{
     breadcrumbs?: BreadcrumbItem[];
     products?: { id: number; name: string; price: string }[];
     showCreateOrder?: boolean;
+    fitViewport?: boolean;
 }>();
 </script>
 
@@ -14,6 +15,7 @@ const { breadcrumbs = [], showCreateOrder = true } = defineProps<{
         :breadcrumbs="breadcrumbs"
         :products="products"
         :show-create-order="showCreateOrder"
+        :fit-viewport="fitViewport"
     >
         <slot />
     </AppLayout>

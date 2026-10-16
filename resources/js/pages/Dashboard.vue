@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import {
+    ArrowUpRight,
     BellRing,
     CheckCircle2,
     ChefHat,
@@ -8,6 +9,7 @@ import {
     PackageOpen,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import MetricCard from '@/components/workspace/MetricCard.vue';
 import PendingInvitationsModal from '@/components/PendingInvitationsModal.vue';
 import OrderDetailsDialog from '@/components/OrderDetailsDialog.vue';
 import { dashboard } from '@/routes';
@@ -42,24 +44,18 @@ const summaryCards = computed(() => [
         value: props.stats.todayOrders,
         detail: 'registrados no dia',
         icon: ClipboardList,
-        iconClass:
-            'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
     },
     {
         label: 'Em preparo',
         value: props.stats.inPreparation,
         detail: 'na cozinha agora',
         icon: ChefHat,
-        iconClass:
-            'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300',
     },
     {
         label: 'Prontos',
         value: props.stats.ready,
         detail: 'aguardando o cliente',
         icon: BellRing,
-        iconClass:
-            'bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300',
     },
 ]);
 
@@ -134,62 +130,66 @@ defineOptions({
 
     <OrderDetailsDialog :order="selectedOrder" @close="selectedOrder = null" />
 
-    <div
-        class="mx-auto flex w-full max-w-[1600px] flex-col gap-6 p-4 sm:p-6 xl:p-8"
-    >
-        <section class="flex flex-wrap items-end justify-between gap-4">
-            <div class="space-y-1">
-                <p
-                    class="text-sm font-medium text-emerald-700 capitalize dark:text-emerald-300"
+    <div class="workspace-page">
+        <section
+            class="workspace-feature flex flex-wrap items-center justify-between gap-6 p-6 sm:p-8"
+        >
+            <div class="relative space-y-3">
+                <p class="workspace-eyebrow">Seu restaurante, em movimento</p>
+                <h1
+                    class="text-3xl font-semibold tracking-[-0.04em] sm:text-4xl"
                 >
-                    {{ today }}
-                </p>
-                <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
-                    Olá, {{ firstName }} 👋
+                    Olá, {{ firstName }}.
                 </h1>
-                <p class="text-sm text-muted-foreground">
-                    Aqui está o movimento de hoje na sua lanchonete.
+                <p class="max-w-lg text-sm leading-6 text-muted-foreground">
+                    Cada pedido no seu tempo. Acompanhe a operação e deixe a
+                    cozinha fluir.
                 </p>
+                <p class="pt-2 text-xs text-white/65 capitalize">{{ today }}</p>
+            </div>
+            <div class="flex flex-col items-start gap-4 sm:items-end">
+                <span
+                    class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs text-white/85"
+                >
+                    <span class="size-1.5 rounded-full bg-[#c5e8b4]" /> Resumo
+                    de hoje
+                </span>
+                <Link
+                    v-if="page.props.permissions?.canViewOrders"
+                    :href="ordersUrl"
+                    class="workspace-feature-link"
+                >
+                    Acompanhar pedidos <ArrowUpRight class="size-4" />
+                </Link>
             </div>
         </section>
 
         <section
             aria-label="Indicadores do dia"
-            class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
+            class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
         >
-            <article
+            <MetricCard
                 v-for="card in summaryCards"
                 :key="card.label"
-                class="rounded-xl border bg-card p-4 text-card-foreground shadow-sm"
+                :label="card.label"
+                :value="card.value"
+                :detail="card.detail"
+                :tone="
+                    card.label === 'Em preparo'
+                        ? 'amber'
+                        : card.label === 'Prontos'
+                          ? 'sky'
+                          : 'green'
+                "
             >
-                <div class="flex items-start justify-between gap-3">
-                    <div class="space-y-3">
-                        <p class="text-sm text-muted-foreground">
-                            {{ card.label }}
-                        </p>
-                        <p class="text-3xl font-semibold tabular-nums">
-                            {{ card.value }}
-                        </p>
-                        <p class="text-xs text-muted-foreground">
-                            {{ card.detail }}
-                        </p>
-                    </div>
-                    <span
-                        class="grid size-10 place-items-center rounded-xl"
-                        :class="card.iconClass"
-                    >
-                        <component :is="card.icon" class="size-5" />
-                    </span>
-                </div>
-            </article>
+                <template #icon
+                    ><component :is="card.icon" class="size-4"
+                /></template>
+            </MetricCard>
         </section>
 
-        <section
-            class="grid gap-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(260px,0.85fr)]"
-        >
-            <article
-                class="rounded-xl border bg-card text-card-foreground shadow-sm"
-            >
+        <section class="grid gap-4 xl:grid-cols-3">
+            <article class="workspace-panel overflow-hidden xl:col-span-2">
                 <header
                     class="flex items-center justify-between gap-3 border-b px-5 py-4"
                 >
@@ -261,9 +261,7 @@ defineOptions({
                 </div>
             </article>
 
-            <article
-                class="rounded-xl border bg-card text-card-foreground shadow-sm"
-            >
+            <article class="workspace-panel">
                 <header class="border-b px-5 py-4">
                     <h2 class="font-semibold">Fluxo dos pedidos</h2>
                     <p class="mt-1 text-sm text-muted-foreground">

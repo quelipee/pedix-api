@@ -11,6 +11,8 @@ import {
     WalletCards,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import MetricCard from '@/components/workspace/MetricCard.vue';
+import PageHeader from '@/components/workspace/PageHeader.vue';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -158,26 +160,18 @@ defineOptions({ layout: () => ({ breadcrumbs: [] }) });
 <template>
     <Head title="Caixa" />
 
-    <div
-        class="mx-auto flex w-full max-w-[1600px] flex-col gap-6 p-4 sm:p-6 xl:p-8"
-    >
-        <header class="space-y-1">
-            <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
-                Caixa
-            </h1>
-            <p class="text-sm text-muted-foreground">
-                Acompanhe as vendas e o dinheiro disponível no estabelecimento.
-            </p>
-        </header>
+    <div class="workspace-page">
+        <PageHeader
+            title="Caixa"
+            eyebrow="As contas da sua operação"
+            description="Acompanhe cada entrada, organize as movimentações e feche o turno com clareza."
+        />
 
         <section
             v-if="!cashRegister"
             class="grid gap-4 lg:grid-cols-[1fr_0.8fr]"
         >
-            <form
-                class="rounded-2xl border bg-card p-5 shadow-sm"
-                @submit.prevent="submitOpening"
-            >
+            <form class="workspace-panel p-5" @submit.prevent="submitOpening">
                 <div class="flex items-center gap-3">
                     <span
                         class="grid size-11 place-items-center rounded-xl bg-primary/10 text-primary"
@@ -236,7 +230,7 @@ defineOptions({ layout: () => ({ breadcrumbs: [] }) });
 
         <template v-else>
             <section
-                class="flex flex-wrap items-center justify-between gap-4 rounded-2xl border bg-card p-4 shadow-sm sm:p-5"
+                class="workspace-panel flex flex-wrap items-center justify-between gap-4 border-primary/20 bg-secondary/40 p-5"
             >
                 <div>
                     <div class="flex items-center gap-2">
@@ -276,19 +270,21 @@ defineOptions({ layout: () => ({ breadcrumbs: [] }) });
             </section>
 
             <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <div class="rounded-2xl border bg-card p-4">
-                    <p class="text-sm text-muted-foreground">Saldo inicial</p>
-                    <p class="mt-2 text-2xl font-semibold">
-                        {{ money(cashRegister.openingBalance) }}
-                    </p>
-                </div>
-                <div class="rounded-2xl border bg-card p-4">
-                    <p class="text-sm text-muted-foreground">Vendas do turno</p>
-                    <p class="mt-2 text-2xl font-semibold">
-                        {{ money(cashRegister.totalSales) }}
-                    </p>
-                </div>
-                <div class="rounded-2xl border bg-card p-4">
+                <MetricCard
+                    label="Saldo inicial"
+                    :value="money(cashRegister.openingBalance)"
+                    detail="Dinheiro na abertura"
+                >
+                    <template #icon><Landmark class="size-4" /></template>
+                </MetricCard>
+                <MetricCard
+                    label="Vendas do turno"
+                    :value="money(cashRegister.totalSales)"
+                    detail="Todas as formas de pagamento"
+                >
+                    <template #icon><WalletCards class="size-4" /></template>
+                </MetricCard>
+                <div class="workspace-stat">
                     <p class="text-sm text-muted-foreground">
                         Suprimentos / sangrias
                     </p>
@@ -299,20 +295,23 @@ defineOptions({ layout: () => ({ breadcrumbs: [] }) });
                         − {{ money(cashRegister.withdrawals) }}
                     </p>
                 </div>
-                <div
-                    class="rounded-2xl border border-primary/20 bg-primary/5 p-4"
-                >
+                <div class="workspace-feature p-5">
                     <p class="text-sm text-muted-foreground">
                         Dinheiro esperado
                     </p>
-                    <p class="mt-2 text-2xl font-semibold text-primary">
+                    <p
+                        class="mt-4 text-3xl font-semibold tracking-tight tabular-nums"
+                    >
                         {{ money(cashRegister.expectedCash) }}
+                    </p>
+                    <p class="mt-2 text-xs text-white/60">
+                        Saldo físico previsto na gaveta
                     </p>
                 </div>
             </section>
 
             <section class="grid gap-4 lg:grid-cols-2">
-                <div class="rounded-2xl border bg-card p-5">
+                <div class="workspace-panel p-5">
                     <div class="flex items-center gap-2">
                         <WalletCards class="size-5 text-primary" />
                         <h2 class="font-semibold">Vendas por pagamento</h2>
@@ -333,7 +332,7 @@ defineOptions({ layout: () => ({ breadcrumbs: [] }) });
                     </div>
                 </div>
 
-                <div class="rounded-2xl border bg-card p-5">
+                <div class="workspace-panel p-5">
                     <div class="flex items-center gap-2">
                         <CircleDollarSign class="size-5 text-primary" />
                         <h2 class="font-semibold">Movimentações</h2>
@@ -381,10 +380,7 @@ defineOptions({ layout: () => ({ breadcrumbs: [] }) });
             </section>
         </template>
 
-        <section
-            v-if="recentRegisters.length"
-            class="rounded-2xl border bg-card p-5"
-        >
+        <section v-if="recentRegisters.length" class="workspace-panel p-5">
             <h2 class="font-semibold">Fechamentos recentes</h2>
             <div class="mt-4 overflow-x-auto">
                 <table class="w-full min-w-[760px] text-left text-sm">

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PageHeader from '@/components/workspace/PageHeader.vue';
 import { Head, Link, router, useHttp, usePage } from '@inertiajs/vue3';
 import {
     ArrowRight,
@@ -200,19 +201,12 @@ defineOptions({
         @close="dispatchingOrder = null"
     />
 
-    <div
-        class="mx-auto flex w-full max-w-[1600px] flex-col gap-6 p-4 sm:p-6 xl:p-8"
-    >
-        <header class="flex flex-wrap items-end justify-between gap-4">
-            <div class="space-y-1">
-                <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
-                    Histórico de pedidos
-                </h1>
-                <p class="text-sm text-muted-foreground">
-                    Consulte pedidos anteriores, pesquise clientes e filtre por
-                    período ou situação.
-                </p>
-            </div>
+    <div class="workspace-page">
+        <PageHeader
+            title="Histórico de pedidos"
+            eyebrow="Cada pedido, uma história"
+            description="Consulte os atendimentos e encontre o que precisa por cliente, período ou situação."
+        >
             <div class="flex flex-wrap gap-2">
                 <Button as-child variant="outline" class="gap-2 rounded-xl">
                     <Link :href="activeOrdersUrl">
@@ -231,11 +225,9 @@ defineOptions({
                     Motoboys
                 </Button>
             </div>
-        </header>
+        </PageHeader>
 
-        <section
-            class="rounded-2xl border bg-card text-card-foreground shadow-sm"
-        >
+        <section class="workspace-panel overflow-hidden">
             <div class="space-y-4 border-b p-4 sm:p-5">
                 <nav
                     aria-label="Filtrar pedidos por etapa"

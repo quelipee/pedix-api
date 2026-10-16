@@ -43,6 +43,10 @@ class DeleteTeamRequest extends FormRequest
                 if ($this->input('name') !== $this->team()->name) {
                     $validator->errors()->add('name', __('The team name does not match.'));
                 }
+
+                if ($this->team()->hasOngoingSubscription() || $this->team()->hasPendingCheckout()) {
+                    $validator->errors()->add('name', 'Encerre a assinatura e os checkouts em andamento antes de excluir a equipe.');
+                }
             },
         ];
     }
